@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\Api\Admin\CustomerController;
 use App\Http\Controllers\Api\Admin\DashboardController;
+use App\Http\Controllers\Api\Admin\InventoryController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\CategoryController;
@@ -75,17 +77,32 @@ Route::middleware('auth:sanctum')->group(function () {
     | Protected Admin Routes (Sanctum + Admin Middleware)
     |--------------------------------------------------------------------------
     */
-    Route::middleware('admin')->group(function () {
-        // Admin dashboard stats
-        Route::get('/admin/dashboard/stats', [DashboardController::class, 'stats']);
+    Route::middleware('admin')->prefix('admin')->group(function () {
+        // Admin dashboard stats & charts
+        Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
 
-        // Admin product management CRUD
+        // Admin categories CRUD
+        Route::post('/categories', [CategoryController::class, 'store']);
+        Route::put('/categories/{id}', [CategoryController::class, 'update']);
+        Route::delete('/categories/{id}', [CategoryController::class, 'destroy']);
+
+        // Admin products CRUD
+        Route::get('/products', [ProductController::class, 'adminIndex']);
         Route::post('/products', [ProductController::class, 'store']);
-        Route::put('/products/{product}', [ProductController::class, 'update']);
-        Route::delete('/products/{product}', [ProductController::class, 'destroy']);
+        Route::put('/products/{id}', [ProductController::class, 'update']);
+        Route::post('/products/{id}', [ProductController::class, 'update']); // for multipart update
+        Route::delete('/products/{id}', [ProductController::class, 'destroy']);
 
         // Admin order management
-        Route::get('/admin/orders', [OrderController::class, 'adminIndex']);
-        Route::put('/admin/orders/{id}/status', [OrderController::class, 'updateStatus']);
+        Route::get('/orders', [OrderController::class, 'adminIndex']);
+        Route::put('/orders/{id}/status', [OrderController::class, 'updateStatus']);
+
+        // Admin customer management
+        Route::get('/customers', [CustomerController::class, 'index']);
+        Route::get('/customers/{id}', [CustomerController::class, 'show']);
+
+        // Admin inventory monitoring & quick stock update
+        Route::get('/inventory', [InventoryController::class, 'index']);
+        Route::put('/inventory/{id}/stock', [InventoryController::class, 'updateStock']);
     });
 });

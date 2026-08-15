@@ -10,6 +10,7 @@ use App\Models\Product;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -132,6 +133,45 @@ class ProductController extends Controller
     }
 
     /**
+     * Admin: List all products with all statuses.
+     */
+    public function adminIndex(Request $request): JsonResponse
+    {
+        $query = Product::with('category');
+
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->category_id);
+        }
+
+        if ($request->filled('search')) {
+            $search = trim($request->search);
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('brand', 'like', "%{$search}%")
+                  ->orWhere('id', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->boolean('status'));
+        }
+
+        $perPage = (int) $request->input('per_page', 15);
+        $products = $query->latest()->paginate($perPage);
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $products->items(),
+            'pagination' => [
+                'total' => $products->total(),
+                'per_page' => $products->perPage(),
+                'current_page' => $products->currentPage(),
+                'last_page' => $products->lastPage(),
+            ],
+        ], Response::HTTP_OK);
+    }
+
+    /**
      * Lightweight search/autocomplete for instant suggestion dropdowns.
      */
     public function autocomplete(Request $request): JsonResponse
@@ -221,6 +261,12 @@ class ProductController extends Controller
             $data['slug'] = Str::slug($data['name']) . '-' . rand(1000, 9999);
         }
 
+        // Handle uploaded image file if present
+        if ($request->hasFile('image_file')) {
+            $path = $request->file('image_file')->store('products', 'public');
+            $data['image'] = url('/storage/' . $path);
+        }
+
         $product = Product::create($data);
 
         return response()->json([
@@ -233,11 +279,26 @@ class ProductController extends Controller
     /**
      * Update the specified product in storage (Admin only).
      */
-    public function update(UpdateProductRequest $request, Product $product): JsonResponse
+    public function update(UpdateProductRequest $request, int|string $id): JsonResponse
     {
+        $product = Product::find($id);
+
+        if (!$product) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Mahsulot topilmadi.',
+            ], Response::HTTP_NOT_FOUND);
+        }
+
         $data = $request->validated();
         if (isset($data['name']) && empty($data['slug'])) {
             $data['slug'] = Str::slug($data['name']) . '-' . $product->id;
+        }
+
+        // Handle uploaded image file if present
+        if ($request->hasFile('image_file')) {
+            $path = $request->file('image_file')->store('products', 'public');
+            $data['image'] = url('/storage/' . $path);
         }
 
         $product->update($data);
@@ -252,8 +313,17 @@ class ProductController extends Controller
     /**
      * Remove the specified product from storage (Admin only).
      */
-    public function destroy(Product $product): JsonResponse
+    public function destroy(int|string $id): JsonResponse
     {
+        $product = Product::find($id);
+
+        if (!$product) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Mahsulot topilmadi.',
+            ], Response::HTTP_NOT_FOUND);
+        }
+
         $product->delete();
 
         return response()->json([
