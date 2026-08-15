@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Navbar from './components/common/Navbar';
 import CartNotification from './components/common/CartNotification';
+import GlobalToast from './components/common/GlobalToast';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import AdminRoute from './components/auth/AdminRoute';
 import GuestRoute from './components/auth/GuestRoute';
@@ -130,7 +131,8 @@ function AppContent({ lang, setLang }) {
         </Routes>
       </main>
 
-      {/* Global Cart floating toast notification */}
+      {/* Global floating alerts and notifications */}
+      <GlobalToast />
       {!isAdminPath && <CartNotification lang={lang} />}
 
       {!isAdminPath && (
