@@ -19,10 +19,12 @@ import {
 } from 'lucide-react';
 import productService from '../../services/productService';
 import ProductCard from '../../components/products/ProductCard';
+import useCartStore from '../../store/cartStore';
 
 export default function ProductDetailPage({ lang = 'uz' }) {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const addItem = useCartStore((state) => state.addItem);
 
   const [product, setProduct] = useState(null);
   const [similarProducts, setSimilarProducts] = useState([]);
@@ -78,8 +80,17 @@ export default function ProductDetailPage({ lang = 'uz' }) {
     return Number(val || 0).toLocaleString('uz-UZ') + " so'm";
   };
 
-  const handleAddToCart = () => {
-    alert(`"${product.name}" (${quantity} dona) savatga qo‘shildi!`);
+  const handleAddToCart = async () => {
+    if (product && inStock) {
+      await addItem(product, quantity);
+    }
+  };
+
+  const handleBuyNow = async () => {
+    if (product && inStock) {
+      await addItem(product, quantity);
+      navigate('/cart');
+    }
   };
 
   const t = {
@@ -336,10 +347,7 @@ export default function ProductDetailPage({ lang = 'uz' }) {
                   <button
                     type="button"
                     disabled={!inStock}
-                    onClick={() => {
-                      handleAddToCart();
-                      navigate('/profile');
-                    }}
+                    onClick={handleBuyNow}
                     className="py-3 px-5 rounded-xl text-xs font-semibold text-teal-800 bg-teal-50 hover:bg-teal-100 active:bg-teal-200 border border-teal-200 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
                   >
                     <Zap className="w-4 h-4 text-teal-600" />
@@ -468,7 +476,6 @@ export default function ProductDetailPage({ lang = 'uz' }) {
                 key={p.id}
                 product={p}
                 lang={lang}
-                onAddToCart={(item) => alert(`"${item.name}" savatga qo‘shildi!`)}
               />
             ))}
           </div>

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/common/Navbar';
+import CartNotification from './components/common/CartNotification';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import AdminRoute from './components/auth/AdminRoute';
 import GuestRoute from './components/auth/GuestRoute';
@@ -8,6 +9,7 @@ import GuestRoute from './components/auth/GuestRoute';
 import HomePage from './pages/HomePage';
 import ProductsPage from './pages/products/ProductsPage';
 import ProductDetailPage from './pages/products/ProductDetailPage';
+import CartPage from './pages/cart/CartPage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
@@ -16,8 +18,23 @@ import ProfilePage from './pages/auth/ProfilePage';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import UnauthorizedPage from './pages/UnauthorizedPage';
 
+import useAuthStore from './store/authStore';
+import useCartStore from './store/cartStore';
+
 export default function App() {
   const [lang, setLang] = useState('uz');
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const fetchCart = useCartStore((state) => state.fetchCart);
+  const syncWithServer = useCartStore((state) => state.syncWithServer);
+
+  // Sync / fetch cart on mount and when authentication state changes
+  useEffect(() => {
+    if (isAuthenticated) {
+      syncWithServer();
+    } else {
+      fetchCart();
+    }
+  }, [isAuthenticated]);
 
   return (
     <BrowserRouter>
@@ -26,10 +43,11 @@ export default function App() {
 
         <main className="flex-1">
           <Routes>
-            {/* Public catalog & landing */}
+            {/* Public catalog & shopping */}
             <Route path="/" element={<HomePage lang={lang} />} />
             <Route path="/products" element={<ProductsPage lang={lang} />} />
             <Route path="/products/:slug" element={<ProductDetailPage lang={lang} />} />
+            <Route path="/cart" element={<CartPage lang={lang} />} />
 
             {/* Guest-only auth routes */}
             <Route
@@ -92,6 +110,9 @@ export default function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
+
+        {/* Global Cart floating toast notification */}
+        <CartNotification lang={lang} />
 
         <footer className="bg-white border-t border-gray-200 py-6 text-center text-xs text-gray-500">
           <div className="max-w-7xl mx-auto px-4">

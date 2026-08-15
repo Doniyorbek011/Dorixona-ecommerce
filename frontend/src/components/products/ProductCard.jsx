@@ -1,8 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingCart, Star, CheckCircle2, XCircle, Pill } from 'lucide-react';
+import useCartStore from '../../store/cartStore';
 
-export default function ProductCard({ product, lang = 'uz', onAddToCart }) {
+export default function ProductCard({ product, lang = 'uz' }) {
+  const addItem = useCartStore((state) => state.addItem);
+
   if (!product) return null;
 
   const isDiscounted =
@@ -22,6 +25,14 @@ export default function ProductCard({ product, lang = 'uz', onAddToCart }) {
 
   const formatPrice = (val) => {
     return Number(val || 0).toLocaleString('uz-UZ') + " so'm";
+  };
+
+  const handleAddToCart = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (inStock) {
+      await addItem(product, 1);
+    }
   };
 
   const t = {
@@ -136,7 +147,7 @@ export default function ProductCard({ product, lang = 'uz', onAddToCart }) {
           <button
             type="button"
             disabled={!inStock}
-            onClick={() => onAddToCart && onAddToCart(product)}
+            onClick={handleAddToCart}
             className={`w-full py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all shadow-2xs ${
               inStock
                 ? 'bg-medical-50 text-medical-700 hover:bg-medical-600 hover:text-white active:bg-medical-700'

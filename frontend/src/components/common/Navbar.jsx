@@ -6,6 +6,7 @@ import {
   LogOut,
   Shield,
   ShoppingBag,
+  ShoppingCart,
   ChevronDown,
   LayoutDashboard,
   Menu,
@@ -13,10 +14,12 @@ import {
   Grid,
 } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
+import useCartStore from '../../store/cartStore';
 import SearchAutocomplete from './SearchAutocomplete';
 
 export default function Navbar({ lang, setLang }) {
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
+  const totalQuantity = useCartStore((state) => state.totalQuantity);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
@@ -34,6 +37,7 @@ export default function Navbar({ lang, setLang }) {
       catalog: 'Katalog',
       orders: 'Buyurtmalarim',
       profile: 'Mening profilim',
+      cart: 'Savat',
       adminPanel: 'Admin Boshqaruvi',
       login: 'Kirish',
       register: 'Ro‘yxatdan o‘tish',
@@ -46,6 +50,7 @@ export default function Navbar({ lang, setLang }) {
       catalog: 'Каталог',
       orders: 'Мои заказы',
       profile: 'Мой профиль',
+      cart: 'Корзина',
       adminPanel: 'Панель администратора',
       login: 'Войти',
       register: 'Регистрация',
@@ -87,7 +92,7 @@ export default function Navbar({ lang, setLang }) {
           </div>
 
           {/* Right Side Actions */}
-          <div className="flex items-center gap-2.5 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {/* Language Switcher */}
             <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg border border-gray-200 text-xs">
               <button
@@ -111,6 +116,20 @@ export default function Navbar({ lang, setLang }) {
                 RU
               </button>
             </div>
+
+            {/* Shopping Cart Button */}
+            <Link
+              to="/cart"
+              className="relative p-2 rounded-xl border border-gray-200 hover:border-medical-300 hover:bg-medical-50/50 text-navy-900 transition-colors"
+              title="Savat"
+            >
+              <ShoppingCart className="w-5 h-5 text-navy-800" />
+              {totalQuantity > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 bg-medical-600 text-white rounded-full text-[10px] font-black flex items-center justify-center shadow-xs border-2 border-white animate-scale-in">
+                  {totalQuantity}
+                </span>
+              )}
+            </Link>
 
             {/* Admin shortcut if admin */}
             {isAdmin && (
@@ -157,6 +176,20 @@ export default function Navbar({ lang, setLang }) {
                     >
                       <UserIcon className="w-4 h-4 text-gray-400" />
                       {currentT.profile}
+                    </Link>
+
+                    <Link
+                      to="/cart"
+                      onClick={() => setDropdownOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 hover:text-medical-600"
+                    >
+                      <ShoppingCart className="w-4 h-4 text-gray-400" />
+                      <span>{currentT.cart}</span>
+                      {totalQuantity > 0 && (
+                        <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-medical-50 text-medical-700">
+                          {totalQuantity}
+                        </span>
+                      )}
                     </Link>
 
                     {isAdmin && (
@@ -229,6 +262,21 @@ export default function Navbar({ lang, setLang }) {
               >
                 <Grid className="w-3.5 h-3.5 text-medical-600" />
                 {currentT.catalog}
+              </Link>
+              <Link
+                to="/cart"
+                onClick={() => setMobileMenuOpen(false)}
+                className="px-3 py-2 rounded-lg text-xs font-semibold text-gray-700 hover:bg-gray-50 flex items-center justify-between"
+              >
+                <div className="flex items-center gap-1.5">
+                  <ShoppingCart className="w-3.5 h-3.5 text-medical-600" />
+                  <span>{currentT.cart}</span>
+                </div>
+                {totalQuantity > 0 && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-medical-50 text-medical-700">
+                    {totalQuantity}
+                  </span>
+                )}
               </Link>
               {isAuthenticated && (
                 <Link
