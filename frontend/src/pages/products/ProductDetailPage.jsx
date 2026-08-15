@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import productService from '../../services/productService';
 import ProductCard from '../../components/products/ProductCard';
+import SEO from '../../components/common/SEO';
 import useCartStore from '../../store/cartStore';
 
 export default function ProductDetailPage({ lang = 'uz' }) {
@@ -187,8 +188,38 @@ export default function ProductDetailPage({ lang = 'uz' }) {
       ? product.category?.name_ru || product.category?.name_uz
       : product.category?.name_uz || product.category?.name_ru;
 
+  // Schema.org Product structured data
+  const schemaProduct = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.name,
+    image: product.image,
+    description: product.description || `${product.name} - Apteka online dorixonasi`,
+    brand: {
+      '@type': 'Brand',
+      name: product.brand || 'Apteka',
+    },
+    offers: {
+      '@type': 'Offer',
+      price: currentPrice,
+      priceCurrency: 'UZS',
+      availability: inStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      url: window.location.href,
+    },
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Dynamic SEO Tags */}
+      <SEO
+        title={`${product.name} - ${formatPrice(currentPrice)}`}
+        description={`${product.name} (${product.brand}). ${product.description || 'Apteka online dorixonasidan xarid qiling.'}`}
+        image={product.image}
+        url={window.location.href}
+        type="product"
+        schemaJson={schemaProduct}
+      />
+
       {/* Breadcrumbs */}
       <nav className="flex items-center gap-2 text-xs text-gray-500 mb-8 overflow-x-auto pb-2">
         <Link to="/" className="hover:text-medical-600 transition-colors">
@@ -230,6 +261,7 @@ export default function ProductDetailPage({ lang = 'uz' }) {
               <img
                 src={product.image || 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=800&auto=format&fit=crop&q=80'}
                 alt={product.name}
+                loading="lazy"
                 className="max-h-full max-w-full object-contain hover:scale-105 transition-transform duration-300"
                 onError={(e) => {
                   e.target.onerror = null;

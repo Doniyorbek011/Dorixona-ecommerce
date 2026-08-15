@@ -26,8 +26,8 @@ Route::get('/health', function () {
     ]);
 });
 
-// Authentication endpoints
-Route::prefix('auth')->group(function () {
+// Authentication endpoints (Throttled for brute-force security)
+Route::prefix('auth')->middleware('throttle:15,1')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
@@ -40,7 +40,7 @@ Route::get('/categories/{idOrSlug}', [CategoryController::class, 'show']);
 
 // Products public endpoints
 Route::get('/products', [ProductController::class, 'index']);
-Route::get('/products/search/autocomplete', [ProductController::class, 'autocomplete']);
+Route::get('/products/search/autocomplete', [ProductController::class, 'autocomplete'])->middleware('throttle:60,1');
 Route::get('/products/brands', [ProductController::class, 'brands']);
 Route::get('/products/{idOrSlug}', [ProductController::class, 'show']);
 
@@ -65,10 +65,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/sync', [CartController::class, 'sync']);
     });
 
-    // Orders endpoints
+    // Orders endpoints (Throttled to prevent rapid submission attacks)
     Route::prefix('orders')->group(function () {
         Route::get('/', [OrderController::class, 'index']);
-        Route::post('/', [OrderController::class, 'store']);
+        Route::post('/', [OrderController::class, 'store'])->middleware('throttle:15,1');
         Route::get('/{id}', [OrderController::class, 'show']);
     });
 
@@ -90,7 +90,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/products', [ProductController::class, 'adminIndex']);
         Route::post('/products', [ProductController::class, 'store']);
         Route::put('/products/{id}', [ProductController::class, 'update']);
-        Route::post('/products/{id}', [ProductController::class, 'update']); // for multipart update
+        Route::post('/products/{id}', [ProductController::class, 'update']);
         Route::delete('/products/{id}', [ProductController::class, 'destroy']);
 
         // Admin order management
