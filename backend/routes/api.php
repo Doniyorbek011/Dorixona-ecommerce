@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\Admin\DashboardController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\ProductController;
 use Illuminate\Support\Facades\Route;
 
@@ -62,6 +63,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/sync', [CartController::class, 'sync']);
     });
 
+    // Orders endpoints
+    Route::prefix('orders')->group(function () {
+        Route::get('/', [OrderController::class, 'index']);
+        Route::post('/', [OrderController::class, 'store']);
+        Route::get('/{id}', [OrderController::class, 'show']);
+    });
+
     /*
     |--------------------------------------------------------------------------
     | Protected Admin Routes (Sanctum + Admin Middleware)
@@ -75,5 +83,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/products', [ProductController::class, 'store']);
         Route::put('/products/{product}', [ProductController::class, 'update']);
         Route::delete('/products/{product}', [ProductController::class, 'destroy']);
+
+        // Admin order management
+        Route::get('/admin/orders', [OrderController::class, 'adminIndex']);
+        Route::put('/admin/orders/{id}/status', [OrderController::class, 'updateStatus']);
     });
 });

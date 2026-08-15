@@ -88,7 +88,7 @@ class OrderSeeder extends Seeder
                 'total' => $total2,
                 'payment_method' => 'cash',
                 'payment_status' => 'pending',
-                'status' => 'processing',
+                'status' => 'preparing',
             ]);
 
             OrderItem::create([

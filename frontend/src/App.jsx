@@ -10,6 +10,7 @@ import HomePage from './pages/HomePage';
 import ProductsPage from './pages/products/ProductsPage';
 import ProductDetailPage from './pages/products/ProductDetailPage';
 import CartPage from './pages/cart/CartPage';
+import CheckoutPage from './pages/checkout/CheckoutPage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
@@ -48,6 +49,16 @@ export default function App() {
             <Route path="/products" element={<ProductsPage lang={lang} />} />
             <Route path="/products/:slug" element={<ProductDetailPage lang={lang} />} />
             <Route path="/cart" element={<CartPage lang={lang} />} />
+
+            {/* Protected Checkout route */}
+            <Route
+              path="/checkout"
+              element={
+                <ProtectedRoute>
+                  <CheckoutPage lang={lang} />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Guest-only auth routes */}
             <Route

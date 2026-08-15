@@ -23,7 +23,7 @@ return new class extends Migration
             $table->decimal('total', 12, 2);
             $table->enum('payment_method', ['cash', 'payme', 'click', 'uzum', 'card'])->default('cash');
             $table->enum('payment_status', ['pending', 'paid', 'failed', 'refunded'])->default('pending')->index();
-            $table->enum('status', ['pending', 'processing', 'shipped', 'delivered', 'cancelled'])->default('pending')->index();
+            $table->enum('status', ['new', 'confirmed', 'preparing', 'shipping', 'delivered', 'cancelled'])->default('new')->index();
             $table->timestamps();
         });
     }
