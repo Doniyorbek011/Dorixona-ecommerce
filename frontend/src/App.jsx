@@ -6,6 +6,8 @@ import AdminRoute from './components/auth/AdminRoute';
 import GuestRoute from './components/auth/GuestRoute';
 
 import HomePage from './pages/HomePage';
+import ProductsPage from './pages/products/ProductsPage';
+import ProductDetailPage from './pages/products/ProductDetailPage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
@@ -24,8 +26,10 @@ export default function App() {
 
         <main className="flex-1">
           <Routes>
-            {/* Public landing */}
+            {/* Public catalog & landing */}
             <Route path="/" element={<HomePage lang={lang} />} />
+            <Route path="/products" element={<ProductsPage lang={lang} />} />
+            <Route path="/products/:slug" element={<ProductDetailPage lang={lang} />} />
 
             {/* Guest-only auth routes */}
             <Route

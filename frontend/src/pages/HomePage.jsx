@@ -13,18 +13,39 @@ import {
   Shield,
   Activity,
   Layers,
+  Grid,
+  Percent,
 } from 'lucide-react';
 import useAuth from '../hooks/useAuth';
 import { checkHealth } from '../services/api';
+import productService from '../services/productService';
+import ProductCard from '../components/products/ProductCard';
+import ProductSkeleton from '../components/products/ProductSkeleton';
+import SearchAutocomplete from '../components/common/SearchAutocomplete';
 
 export default function HomePage({ lang = 'uz' }) {
   const { user, isAuthenticated, isAdmin } = useAuth();
   const [apiStatus, setApiStatus] = useState({ state: 'checking', data: null });
+  const [categories, setCategories] = useState([]);
+  const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
 
   useEffect(() => {
+    // Health check
     checkHealth()
       .then((data) => setApiStatus({ state: 'online', data }))
       .catch((err) => setApiStatus({ state: 'error', data: err }));
+
+    // Categories
+    productService.getCategories().then((res) => setCategories(res.data || []));
+
+    // Featured products
+    productService
+      .getProducts({ per_page: 6, sort: 'popular' })
+      .then((res) => {
+        setFeaturedProducts(res.data || []);
+      })
+      .finally(() => setIsLoadingProducts(false));
   }, []);
 
   const t = {
@@ -33,38 +54,34 @@ export default function HomePage({ lang = 'uz' }) {
       heroTitle: 'Barcha kerakli dori vositalari bir joyda',
       heroSubtitle:
         'Sertifikatlangan dori vositalari, vitaminlar va tibbiy texnikalarni uyingizga tez va xavfsiz yetkazib beramiz.',
+      catalogBtn: 'Katalogga o‘tish',
       loginBtn: 'Tizimga kirish',
-      registerBtn: 'Ro‘yxatdan o‘tish',
-      profileBtn: 'Mening profilim',
-      adminBtn: 'Admin Paneli',
+      categoriesTitle: 'Ommabop kategoriyalar',
+      featuredTitle: 'Tavsiya etiladigan mahsulotlar',
+      viewAll: 'Barchasini ko‘rish',
       feat1Title: '100% Sertifikatlangan',
       feat1Desc: 'Barcha mahsulotlar kafolatlangan va litsenziyalangan',
       feat2Title: 'Tezkor yetkazib berish',
       feat2Desc: 'Toshkent bo‘ylab 2 soat ichida eshigingizgacha',
       feat3Title: '24/7 Farmatsevt yordami',
       feat3Desc: 'Malakali mutaxassislardan bepul onlayn maslahat',
-      authStatusTitle: 'Foydalanuvchi Seansi:',
-      loggedInAs: 'Tizimga kirilgan hisob:',
-      roleLabel: 'Rol:',
     },
     ru: {
       badge: 'Надежная интернет-аптека для вашего здоровья',
       heroTitle: 'Все необходимые лекарства в одном месте',
       heroSubtitle:
         'Сертифицированные лекарства, витамины и медицинская техника с быстрой доставкой на дом.',
+      catalogBtn: 'Перейти в каталог',
       loginBtn: 'Войти',
-      registerBtn: 'Регистрация',
-      profileBtn: 'Мой профиль',
-      adminBtn: 'Панель администратора',
+      categoriesTitle: 'Популярные категории',
+      featuredTitle: 'Рекомендуемые товары',
+      viewAll: 'Смотреть все',
       feat1Title: '100% Сертифицировано',
       feat1Desc: 'Все товары сертифицированы и проверены',
       feat2Title: 'Быстрая доставка',
       feat2Desc: 'По Ташкенту в течение 2 часов до двери',
       feat3Title: 'Поддержка 24/7',
       feat3Desc: 'Бесплатная консультация квалифицированных фармацевтов',
-      authStatusTitle: 'Сеанс пользователя:',
-      loggedInAs: 'Вы вошли как:',
-      roleLabel: 'Роль:',
     },
   };
 
@@ -88,44 +105,28 @@ export default function HomePage({ lang = 'uz' }) {
             {currentT.heroSubtitle}
           </p>
 
+          {/* Instant Hero Search */}
+          <div className="max-w-xl mb-8">
+            <SearchAutocomplete lang={lang} placeholder="Dori nomi yoki brend bo‘yicha qidiring..." />
+          </div>
+
           <div className="flex flex-wrap items-center gap-3">
-            {isAuthenticated ? (
-              <>
-                <Link
-                  to="/profile"
-                  className="px-6 py-3 rounded-xl bg-medical-600 hover:bg-medical-500 text-white font-semibold text-xs sm:text-sm shadow-md transition-all flex items-center gap-2"
-                >
-                  <User className="w-4 h-4" />
-                  <span>{currentT.profileBtn}</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-                {isAdmin && (
-                  <Link
-                    to="/admin"
-                    className="px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-teal-300 border border-teal-500/30 font-semibold text-xs sm:text-sm transition-all flex items-center gap-2"
-                  >
-                    <Shield className="w-4 h-4 text-teal-400" />
-                    <span>{currentT.adminBtn}</span>
-                  </Link>
-                )}
-              </>
-            ) : (
-              <>
-                <Link
-                  to="/login"
-                  className="px-6 py-3 rounded-xl bg-medical-600 hover:bg-medical-500 text-white font-semibold text-xs sm:text-sm shadow-md transition-all flex items-center gap-2"
-                >
-                  <Lock className="w-4 h-4" />
-                  <span>{currentT.loginBtn}</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-                <Link
-                  to="/register"
-                  className="px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 font-semibold text-xs sm:text-sm transition-all"
-                >
-                  {currentT.registerBtn}
-                </Link>
-              </>
+            <Link
+              to="/products"
+              className="px-6 py-3 rounded-xl bg-medical-600 hover:bg-medical-500 text-white font-semibold text-xs sm:text-sm shadow-md transition-all flex items-center gap-2"
+            >
+              <Grid className="w-4 h-4" />
+              <span>{currentT.catalogBtn}</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+
+            {!isAuthenticated && (
+              <Link
+                to="/login"
+                className="px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 font-semibold text-xs sm:text-sm transition-all"
+              >
+                {currentT.loginBtn}
+              </Link>
             )}
           </div>
         </div>
@@ -134,44 +135,86 @@ export default function HomePage({ lang = 'uz' }) {
         <div className="absolute right-0 top-0 bottom-0 w-96 bg-gradient-to-l from-teal-500/10 to-transparent pointer-events-none" />
       </div>
 
-      {/* Auth Status & API Health Card */}
-      <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-xs">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-medical-50 border border-medical-200 text-medical-600 flex items-center justify-center">
-              <Activity className="w-5 h-5" />
-            </div>
+      {/* Categories Grid Section */}
+      {categories.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-6">
             <div>
-              <p className="text-xs font-semibold text-gray-500">API Status:</p>
-              <div className="flex items-center gap-2 mt-0.5">
-                <span
-                  className={`w-2 h-2 rounded-full ${
-                    apiStatus.state === 'online' ? 'bg-teal-500 animate-pulse' : 'bg-red-500'
-                  }`}
-                />
-                <span className="text-xs font-bold text-navy-900">
-                  {apiStatus.state === 'online' ? 'Laravel Sanctum API Online (200 OK)' : 'Checking API...'}
-                </span>
-              </div>
+              <h2 className="text-xl sm:text-2xl font-bold text-navy-900">
+                {currentT.categoriesTitle}
+              </h2>
             </div>
+            <Link
+              to="/products"
+              className="text-xs font-semibold text-medical-600 hover:text-medical-700 flex items-center gap-1"
+            >
+              <span>{currentT.viewAll}</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
 
-          <div className="flex items-center gap-2.5 p-2 px-3 rounded-xl bg-gray-50 border border-gray-200 text-xs">
-            <span className="text-gray-500">{currentT.authStatusTitle}</span>
-            {isAuthenticated ? (
-              <span className="font-bold text-teal-700 flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-teal-600" />
-                {user?.name} ({user?.role})
-              </span>
-            ) : (
-              <span className="font-medium text-gray-600">Mehmon (Kirilmagan)</span>
-            )}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            {categories.map((cat) => {
+              const catName = lang === 'ru' ? cat.name_ru || cat.name_uz : cat.name_uz || cat.name_ru;
+              return (
+                <Link
+                  key={cat.id}
+                  to={`/products?category=${cat.slug}`}
+                  className="group bg-white rounded-2xl border border-gray-200/80 p-4 hover:border-medical-300 hover:shadow-md transition-all flex flex-col items-center text-center overflow-hidden"
+                >
+                  <div className="w-14 h-14 rounded-2xl bg-gray-50 p-2 overflow-hidden mb-3 group-hover:scale-105 transition-transform flex items-center justify-center">
+                    <img
+                      src={cat.image || 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=200&auto=format&fit=crop&q=80'}
+                      alt={catName}
+                      className="w-full h-full object-cover rounded-xl"
+                    />
+                  </div>
+                  <h3 className="text-xs font-bold text-navy-900 group-hover:text-medical-600 transition-colors line-clamp-2 min-h-[32px]">
+                    {catName}
+                  </h3>
+                  <span className="text-[10px] text-gray-400 font-medium mt-1">
+                    {cat.products_count ?? 0} ta mahsulot
+                  </span>
+                </Link>
+              );
+            })}
           </div>
+        </div>
+      )}
+
+      {/* Featured Products Grid */}
+      <div>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl sm:text-2xl font-bold text-navy-900">
+            {currentT.featuredTitle}
+          </h2>
+          <Link
+            to="/products"
+            className="text-xs font-semibold text-medical-600 hover:text-medical-700 flex items-center gap-1"
+          >
+            <span>{currentT.viewAll}</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+          {isLoadingProducts ? (
+            <ProductSkeleton count={6} />
+          ) : (
+            featuredProducts.map((p) => (
+              <ProductCard
+                key={p.id}
+                product={p}
+                lang={lang}
+                onAddToCart={(item) => alert(`"${item.name}" savatga qo‘shildi!`)}
+              />
+            ))
+          )}
         </div>
       </div>
 
       {/* Features Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
         <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-xs hover:border-medical-200 transition-colors">
           <div className="w-12 h-12 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center mb-4">
             <ShieldCheck className="w-6 h-6" />

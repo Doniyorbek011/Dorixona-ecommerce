@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Api\Admin\DashboardController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\ProductController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -28,6 +30,16 @@ Route::prefix('auth')->group(function () {
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 });
 
+// Categories public endpoints
+Route::get('/categories', [CategoryController::class, 'index']);
+Route::get('/categories/{idOrSlug}', [CategoryController::class, 'show']);
+
+// Products public endpoints
+Route::get('/products', [ProductController::class, 'index']);
+Route::get('/products/search/autocomplete', [ProductController::class, 'autocomplete']);
+Route::get('/products/brands', [ProductController::class, 'brands']);
+Route::get('/products/{idOrSlug}', [ProductController::class, 'show']);
+
 /*
 |--------------------------------------------------------------------------
 | Authenticated User Routes (Sanctum)
@@ -44,7 +56,13 @@ Route::middleware('auth:sanctum')->group(function () {
     | Protected Admin Routes (Sanctum + Admin Middleware)
     |--------------------------------------------------------------------------
     */
-    Route::middleware('admin')->prefix('admin')->group(function () {
-        Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
+    Route::middleware('admin')->group(function () {
+        // Admin dashboard stats
+        Route::get('/admin/dashboard/stats', [DashboardController::class, 'stats']);
+
+        // Admin product management CRUD
+        Route::post('/products', [ProductController::class, 'store']);
+        Route::put('/products/{product}', [ProductController::class, 'update']);
+        Route::delete('/products/{product}', [ProductController::class, 'destroy']);
     });
 });
