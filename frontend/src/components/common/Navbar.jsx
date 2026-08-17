@@ -5,13 +5,15 @@ import {
   User as UserIcon,
   LogOut,
   Shield,
-  ShoppingBag,
   ShoppingCart,
   ChevronDown,
   LayoutDashboard,
   Menu,
   X,
   Grid,
+  Layers,
+  Info,
+  Phone,
 } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
 import useCartStore from '../../store/cartStore';
@@ -35,6 +37,9 @@ export default function Navbar({ lang, setLang }) {
     uz: {
       home: 'Bosh sahifa',
       catalog: 'Katalog',
+      categories: 'Kategoriyalar',
+      about: 'Biz haqimizda',
+      contact: 'Aloqa',
       orders: 'Buyurtmalarim',
       profile: 'Mening profilim',
       cart: 'Savat',
@@ -48,6 +53,9 @@ export default function Navbar({ lang, setLang }) {
     ru: {
       home: 'Главная',
       catalog: 'Каталог',
+      categories: 'Категории',
+      about: 'О нас',
+      contact: 'Контакты',
       orders: 'Мои заказы',
       profile: 'Мой профиль',
       cart: 'Корзина',
@@ -62,12 +70,18 @@ export default function Navbar({ lang, setLang }) {
 
   const currentT = t[lang || 'uz'];
 
+  const isActive = (path) => {
+    if (path === '/' && location.pathname === '/') return true;
+    if (path !== '/' && location.pathname.startsWith(path)) return true;
+    return false;
+  };
+
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
+    <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-4">
-          {/* Logo & Catalog Button */}
-          <div className="flex items-center gap-4 shrink-0">
+          {/* Logo & Main Nav Links */}
+          <div className="flex items-center gap-6 shrink-0">
             <Link to="/" className="flex items-center gap-2.5 group">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-medical-600 to-teal-500 flex items-center justify-center text-white shadow-xs group-hover:scale-105 transition-transform">
                 <Pill className="w-6 h-6" />
@@ -77,17 +91,58 @@ export default function Navbar({ lang, setLang }) {
               </div>
             </Link>
 
-            <Link
-              to="/products"
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-medical-50 hover:bg-medical-100 text-medical-700 font-semibold text-xs transition-colors border border-medical-200"
-            >
-              <Grid className="w-3.5 h-3.5" />
-              <span>{currentT.catalog}</span>
-            </Link>
+            {/* Desktop Navigation Links */}
+            <nav className="hidden lg:flex items-center gap-1">
+              <Link
+                to="/products"
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold text-xs transition-colors ${
+                  isActive('/products')
+                    ? 'bg-medical-50 text-medical-700 border border-medical-200'
+                    : 'text-gray-600 hover:text-navy-900 hover:bg-gray-100'
+                }`}
+              >
+                <Grid className="w-3.5 h-3.5" />
+                <span>{currentT.catalog}</span>
+              </Link>
+
+              <Link
+                to="/categories"
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold text-xs transition-colors ${
+                  isActive('/categories')
+                    ? 'bg-medical-50 text-medical-700 border border-medical-200'
+                    : 'text-gray-600 hover:text-navy-900 hover:bg-gray-100'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>{currentT.categories}</span>
+              </Link>
+
+              <Link
+                to="/about"
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold text-xs transition-colors ${
+                  isActive('/about')
+                    ? 'bg-medical-50 text-medical-700 border border-medical-200'
+                    : 'text-gray-600 hover:text-navy-900 hover:bg-gray-100'
+                }`}
+              >
+                <span>{currentT.about}</span>
+              </Link>
+
+              <Link
+                to="/contact"
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold text-xs transition-colors ${
+                  isActive('/contact')
+                    ? 'bg-medical-50 text-medical-700 border border-medical-200'
+                    : 'text-gray-600 hover:text-navy-900 hover:bg-gray-100'
+                }`}
+              >
+                <span>{currentT.contact}</span>
+              </Link>
+            </nav>
           </div>
 
           {/* Center Search Autocomplete */}
-          <div className="flex-1 max-w-md hidden md:block">
+          <div className="flex-1 max-w-xs xl:max-w-sm hidden md:block">
             <SearchAutocomplete lang={lang} />
           </div>
 
@@ -96,6 +151,7 @@ export default function Navbar({ lang, setLang }) {
             {/* Language Switcher */}
             <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg border border-gray-200 text-xs">
               <button
+                type="button"
                 onClick={() => setLang('uz')}
                 className={`px-2.5 py-0.5 rounded font-semibold transition-all ${
                   lang === 'uz'
@@ -106,6 +162,7 @@ export default function Navbar({ lang, setLang }) {
                 UZ
               </button>
               <button
+                type="button"
                 onClick={() => setLang('ru')}
                 className={`px-2.5 py-0.5 rounded font-semibold transition-all ${
                   lang === 'ru'
@@ -146,6 +203,7 @@ export default function Navbar({ lang, setLang }) {
             {isAuthenticated ? (
               <div className="relative">
                 <button
+                  type="button"
                   onClick={() => setDropdownOpen(!dropdownOpen)}
                   className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-gray-200 hover:border-gray-300 bg-white text-sm font-medium text-navy-900 transition-colors focus:outline-none"
                 >
@@ -205,6 +263,7 @@ export default function Navbar({ lang, setLang }) {
 
                     <div className="border-t border-gray-100 mt-1">
                       <button
+                        type="button"
                         onClick={handleLogout}
                         className="w-full text-left flex items-center gap-2.5 px-4 py-2 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors"
                       >
@@ -234,8 +293,9 @@ export default function Navbar({ lang, setLang }) {
 
             {/* Mobile menu button */}
             <button
+              type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-1.5 rounded-lg text-gray-600 hover:bg-gray-100"
+              className="lg:hidden p-1.5 rounded-lg text-gray-600 hover:bg-gray-100"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -244,31 +304,65 @@ export default function Navbar({ lang, setLang }) {
 
         {/* Mobile search bar and menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden py-3 border-t border-gray-100 space-y-3">
+          <div className="lg:hidden py-3 border-t border-gray-100 space-y-3">
             <SearchAutocomplete lang={lang} />
 
             <div className="flex flex-col gap-1 pt-2">
               <Link
                 to="/"
                 onClick={() => setMobileMenuOpen(false)}
-                className="px-3 py-2 rounded-lg text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                className={`px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
+                  isActive('/') ? 'bg-medical-50 text-medical-700' : 'text-gray-700 hover:bg-gray-50'
+                }`}
               >
                 {currentT.home}
               </Link>
               <Link
                 to="/products"
                 onClick={() => setMobileMenuOpen(false)}
-                className="px-3 py-2 rounded-lg text-xs font-semibold text-gray-700 hover:bg-gray-50 flex items-center gap-1.5"
+                className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors ${
+                  isActive('/products') ? 'bg-medical-50 text-medical-700' : 'text-gray-700 hover:bg-gray-50'
+                }`}
               >
                 <Grid className="w-3.5 h-3.5 text-medical-600" />
                 {currentT.catalog}
+              </Link>
+              <Link
+                to="/categories"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors ${
+                  isActive('/categories') ? 'bg-medical-50 text-medical-700' : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5 text-medical-600" />
+                {currentT.categories}
+              </Link>
+              <Link
+                to="/about"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors ${
+                  isActive('/about') ? 'bg-medical-50 text-medical-700' : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <Info className="w-3.5 h-3.5 text-medical-600" />
+                {currentT.about}
+              </Link>
+              <Link
+                to="/contact"
+                onClick={() => setMobileMenuOpen(false)}
+                className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors ${
+                  isActive('/contact') ? 'bg-medical-50 text-medical-700' : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <Phone className="w-3.5 h-3.5 text-medical-600" />
+                {currentT.contact}
               </Link>
               <Link
                 to="/cart"
                 onClick={() => setMobileMenuOpen(false)}
                 className="px-3 py-2 rounded-lg text-xs font-semibold text-gray-700 hover:bg-gray-50 flex items-center justify-between"
               >
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2">
                   <ShoppingCart className="w-3.5 h-3.5 text-medical-600" />
                   <span>{currentT.cart}</span>
                 </div>

@@ -22,6 +22,8 @@ class StoreProductRequest extends FormRequest
             'price' => ['required', 'numeric', 'min:0', 'max:999999999'],
             'discount_price' => ['nullable', 'numeric', 'min:0', 'lt:price'],
             'stock' => ['required', 'integer', 'min:0', 'max:999999'],
+            'rating' => ['nullable', 'numeric', 'min:0', 'max:5'],
+            'rating_count' => ['nullable', 'integer', 'min:0'],
             'image' => ['nullable', 'string', 'max:1000'],
             'image_file' => ['nullable', 'file', 'mimes:jpeg,png,jpg,webp', 'max:5120'], // Max 5MB
             'status' => ['nullable', 'boolean'],

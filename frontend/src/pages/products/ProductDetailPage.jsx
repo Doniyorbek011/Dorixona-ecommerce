@@ -118,6 +118,8 @@ export default function ProductDetailPage({ lang = 'uz' }) {
       feat2: 'Toshkent bo‘ylab 2 soatda yetkazish',
       feat3: 'Mutaxassis bilan xavfsiz konsultatsiya',
       backToCatalog: 'Katalogga qaytish',
+      reviews: 'sharhlar',
+      noReviews: 'Hali baholanmagan',
     },
     ru: {
       home: 'Главная',
@@ -142,10 +144,12 @@ export default function ProductDetailPage({ lang = 'uz' }) {
       feat2: 'Доставка по Ташкенту за 2 часа',
       feat3: 'Безопасная консультация специалиста',
       backToCatalog: 'Вернуться в каталог',
+      reviews: 'отзывов',
+      noReviews: 'Нет отзывов',
     },
   };
 
-  const currentT = t[lang];
+  const currentT = t[lang] || t.uz;
 
   if (isLoading) {
     return (
@@ -294,11 +298,23 @@ export default function ProductDetailPage({ lang = 'uz' }) {
               {/* Rating & Stock row */}
               <div className="flex items-center gap-4 mt-3 pb-5 border-b border-gray-100">
                 <div className="flex items-center gap-1.5">
-                  <div className="flex text-amber-400">
-                    <Star className="w-4 h-4 fill-current" />
-                  </div>
-                  <span className="text-xs font-bold text-navy-900">4.8</span>
-                  <span className="text-xs text-gray-400 font-medium">(24 sharhlar)</span>
+                  {Number(product.rating_count) > 0 && Number(product.rating) > 0 ? (
+                    <>
+                      <div className="flex text-amber-400">
+                        <Star className="w-4 h-4 fill-current" />
+                      </div>
+                      <span className="text-xs font-bold text-navy-900">
+                        {Number(product.rating).toFixed(1)}
+                      </span>
+                      <span className="text-xs text-gray-400 font-medium">
+                        ({product.rating_count} {currentT.reviews})
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-xs text-gray-400 font-medium">
+                      {currentT.noReviews}
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-1.5 text-xs font-medium">

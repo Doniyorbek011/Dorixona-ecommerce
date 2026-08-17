@@ -15,6 +15,9 @@ import useCartStore from './store/cartStore';
 const HomePage = lazy(() => import('./pages/HomePage'));
 const ProductsPage = lazy(() => import('./pages/products/ProductsPage'));
 const ProductDetailPage = lazy(() => import('./pages/products/ProductDetailPage'));
+const CategoriesPage = lazy(() => import('./pages/CategoriesPage'));
+const AboutPage = lazy(() => import('./pages/AboutPage'));
+const ContactPage = lazy(() => import('./pages/ContactPage'));
 const CartPage = lazy(() => import('./pages/cart/CartPage'));
 const CheckoutPage = lazy(() => import('./pages/checkout/CheckoutPage'));
 const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
@@ -61,6 +64,9 @@ function AppContent({ lang, setLang }) {
             <Route path="/" element={<HomePage lang={lang} />} />
             <Route path="/products" element={<ProductsPage lang={lang} />} />
             <Route path="/products/:slug" element={<ProductDetailPage lang={lang} />} />
+            <Route path="/categories" element={<CategoriesPage lang={lang} />} />
+            <Route path="/about" element={<AboutPage lang={lang} />} />
+            <Route path="/contact" element={<ContactPage lang={lang} />} />
             <Route path="/cart" element={<CartPage lang={lang} />} />
 
             {/* Protected Checkout route */}

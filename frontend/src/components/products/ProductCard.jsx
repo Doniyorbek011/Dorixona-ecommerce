@@ -42,6 +42,7 @@ export default function ProductCard({ product, lang = 'uz' }) {
       addToCart: 'Savatga',
       outOfStockBtn: 'Qolmagan',
       reviews: 'sharh',
+      noReviews: 'Hali baholanmagan',
     },
     ru: {
       inStock: 'В наличии',
@@ -49,10 +50,14 @@ export default function ProductCard({ product, lang = 'uz' }) {
       addToCart: 'В корзину',
       outOfStockBtn: 'Нет в наличии',
       reviews: 'отзывов',
+      noReviews: 'Нет отзывов',
     },
   };
 
-  const currentT = t[lang];
+  const currentT = t[lang] || t.uz;
+
+  const ratingCount = Number(product.rating_count || 0);
+  const ratingValue = Number(product.rating || 0);
 
   return (
     <div className="group bg-white rounded-2xl border border-gray-200/80 hover:border-medical-300 hover:shadow-md transition-all duration-200 flex flex-col overflow-hidden relative">
@@ -103,12 +108,24 @@ export default function ProductCard({ product, lang = 'uz' }) {
           </Link>
 
           {/* Rating */}
-          <div className="flex items-center gap-1.5 mt-2">
-            <div className="flex items-center text-amber-400">
-              <Star className="w-3.5 h-3.5 fill-current" />
-            </div>
-            <span className="text-xs font-bold text-navy-900">4.8</span>
-            <span className="text-[10px] text-gray-400 font-medium">(24)</span>
+          <div className="flex items-center gap-1.5 mt-2 min-h-[20px]">
+            {ratingCount > 0 && ratingValue > 0 ? (
+              <>
+                <div className="flex items-center text-amber-400">
+                  <Star className="w-3.5 h-3.5 fill-current" />
+                </div>
+                <span className="text-xs font-bold text-navy-900">
+                  {ratingValue.toFixed(1)}
+                </span>
+                <span className="text-[10px] text-gray-400 font-medium">
+                  ({ratingCount})
+                </span>
+              </>
+            ) : (
+              <span className="text-[11px] text-gray-400 font-medium">
+                {currentT.noReviews}
+              </span>
+            )}
           </div>
         </div>
 

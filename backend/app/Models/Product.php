@@ -21,6 +21,8 @@ class Product extends Model
         'brand',
         'stock',
         'image',
+        'rating',
+        'rating_count',
         'status',
     ];
 
@@ -29,6 +31,8 @@ class Product extends Model
         return [
             'price' => 'decimal:2',
             'discount_price' => 'decimal:2',
+            'rating' => 'decimal:2',
+            'rating_count' => 'integer',
             'stock' => 'integer',
             'status' => 'boolean',
         ];
