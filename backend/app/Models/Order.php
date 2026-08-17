@@ -49,4 +49,13 @@ class Order extends Model
     {
         return $this->hasMany(OrderItem::class);
     }
+
+    /**
+     * Payment transactions for this order.
+     */
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(PaymentTransaction::class);
+    }
 }
+

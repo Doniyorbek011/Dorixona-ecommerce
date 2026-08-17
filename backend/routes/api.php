@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\PaymentCallbackController;
 use App\Http\Controllers\Api\ProductController;
 use Illuminate\Support\Facades\Route;
 
@@ -25,6 +26,14 @@ Route::get('/health', function () {
         'timestamp' => now()->toIso8601String(),
     ]);
 });
+
+// Payment Callbacks / Webhooks (Public endpoints with secret verification)
+Route::prefix('payments')->group(function () {
+    Route::post('/click/callback', [PaymentCallbackController::class, 'clickCallback']);
+    Route::post('/payme/callback', [PaymentCallbackController::class, 'paymeCallback']);
+    Route::post('/uzum/callback', [PaymentCallbackController::class, 'uzumCallback']);
+});
+
 
 // Authentication endpoints (Throttled for brute-force security)
 Route::prefix('auth')->middleware('throttle:15,1')->group(function () {

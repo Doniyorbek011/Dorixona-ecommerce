@@ -4,12 +4,9 @@ import {
   Pill,
   Lock,
   Mail,
-  Phone,
   Eye,
   EyeOff,
   AlertCircle,
-  Shield,
-  UserCheck,
   ArrowRight,
 } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
@@ -20,7 +17,7 @@ export default function LoginPage({ lang = 'uz' }) {
   const [showPassword, setShowPassword] = useState(false);
   const [formError, setFormError] = useState(null);
 
-  const { login, isLoading, isAdmin } = useAuth();
+  const { login, isLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -47,18 +44,6 @@ export default function LoginPage({ lang = 'uz' }) {
     }
   };
 
-  const autofillUser = () => {
-    setLoginInput('user@apteka.uz');
-    setPassword('password123');
-    setFormError(null);
-  };
-
-  const autofillAdmin = () => {
-    setLoginInput('admin@apteka.uz');
-    setPassword('password123');
-    setFormError(null);
-  };
-
   const t = {
     uz: {
       title: 'Tizimga kirish',
@@ -72,9 +57,6 @@ export default function LoginPage({ lang = 'uz' }) {
       submitting: 'Tekshirilmoqda...',
       noAccount: 'Hisobingiz yo‘qmi?',
       registerNow: 'Ro‘yxatdan o‘ting',
-      demoTitle: 'Tezkor Sinov Ma’lumotlari (Demo Autofill):',
-      demoUserBtn: 'Mijoz (user@apteka.uz)',
-      demoAdminBtn: 'Admin (admin@apteka.uz)',
     },
     ru: {
       title: 'Вход в аккаунт',
@@ -88,9 +70,6 @@ export default function LoginPage({ lang = 'uz' }) {
       submitting: 'Проверка...',
       noAccount: 'Нет аккаунта?',
       registerNow: 'Зарегистрироваться',
-      demoTitle: 'Быстрое автозаполнение (Demo Autofill):',
-      demoUserBtn: 'Клиент (user@apteka.uz)',
-      demoAdminBtn: 'Админ (admin@apteka.uz)',
     },
   };
 
@@ -192,31 +171,6 @@ export default function LoginPage({ lang = 'uz' }) {
             </button>
           </form>
 
-          {/* Quick Demo Autofill Section */}
-          <div className="mt-6 pt-5 border-t border-gray-100">
-            <p className="text-[11px] font-semibold text-gray-500 mb-2">
-              {currentT.demoTitle}
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={autofillUser}
-                className="py-1.5 px-2.5 text-[11px] font-medium rounded-lg border border-gray-200 bg-gray-50 hover:bg-gray-100 text-gray-700 flex items-center justify-center gap-1.5 transition-colors"
-              >
-                <UserCheck className="w-3.5 h-3.5 text-teal-600" />
-                {currentT.demoUserBtn}
-              </button>
-              <button
-                type="button"
-                onClick={autofillAdmin}
-                className="py-1.5 px-2.5 text-[11px] font-medium rounded-lg border border-navy-200 bg-navy-50 hover:bg-navy-100 text-navy-900 flex items-center justify-center gap-1.5 transition-colors"
-              >
-                <Shield className="w-3.5 h-3.5 text-medical-600" />
-                {currentT.demoAdminBtn}
-              </button>
-            </div>
-          </div>
-
           <div className="mt-6 text-center text-xs text-gray-600">
             <span>{currentT.noAccount} </span>
             <Link
@@ -231,3 +185,4 @@ export default function LoginPage({ lang = 'uz' }) {
     </div>
   );
 }
+

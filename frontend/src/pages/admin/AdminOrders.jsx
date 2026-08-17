@@ -79,42 +79,49 @@ export default function AdminOrders({ lang = 'uz' }) {
     return Number(val || 0).toLocaleString('uz-UZ') + " so'm";
   };
 
-  const getStatusBadge = (status) => {
+  const getStatusBadge = (status, paymentStatus) => {
     switch (status) {
       case 'new':
         return (
           <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-            Yangi
+            {lang === 'uz' ? 'Yangi' : 'Новый'}
           </span>
         );
       case 'confirmed':
         return (
           <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-            Tasdiqlangan
+            {lang === 'uz' ? 'Tasdiqlangan' : 'Подтвержден'}
           </span>
         );
       case 'preparing':
         return (
           <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-            Tayyorlanmoqda
+            {lang === 'uz' ? 'Tayyorlanmoqda' : 'Собирается'}
           </span>
         );
       case 'shipping':
         return (
           <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 text-teal-700 border border-teal-200">
-            Yetkazilmoqda
+            {lang === 'uz' ? 'Yetkazilmoqda' : 'В пути'}
           </span>
         );
       case 'delivered':
         return (
           <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-            Yetkazib berildi
+            {lang === 'uz' ? 'Yetkazib berildi' : 'Доставлен'}
           </span>
         );
       case 'cancelled':
+        if (paymentStatus === 'failed') {
+          return (
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+              {lang === 'uz' ? 'To‘lov xatosi / Bekor' : 'Ошибка оплаты'}
+            </span>
+          );
+        }
         return (
           <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-red-700 border border-red-200">
-            Bekor qilingan
+            {lang === 'uz' ? 'Bekor qilingan' : 'Отменен'}
           </span>
         );
       default:
@@ -125,6 +132,43 @@ export default function AdminOrders({ lang = 'uz' }) {
         );
     }
   };
+
+
+  const getPaymentStatusBadge = (paymentStatus) => {
+    switch (paymentStatus) {
+      case 'paid':
+        return (
+          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+            To‘langan
+          </span>
+        );
+      case 'pending':
+        return (
+          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+            Kutilmoqda
+          </span>
+        );
+      case 'failed':
+        return (
+          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-red-50 text-red-700 border border-red-200">
+            Bekor
+          </span>
+        );
+      case 'refunded':
+        return (
+          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+            Qaytarilgan
+          </span>
+        );
+      default:
+        return (
+          <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-700">
+            {paymentStatus || 'pending'}
+          </span>
+        );
+    }
+  };
+
 
   return (
     <div className="space-y-6">
@@ -207,11 +251,15 @@ export default function AdminOrders({ lang = 'uz' }) {
                     <td className="p-4 text-slate-600 truncate max-w-[150px]">{order.address}</td>
                     <td className="p-4 font-bold text-slate-900">{formatPrice(order.total)}</td>
                     <td className="p-4">
-                      <span className="uppercase font-mono text-[10px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md">
-                        {order.payment_method}
-                      </span>
+                      <div className="flex flex-col gap-1">
+                        <span className="uppercase font-mono text-[10px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md w-fit">
+                          {order.payment_method}
+                        </span>
+                        {getPaymentStatusBadge(order.payment_status)}
+                      </div>
                     </td>
-                    <td className="p-4">{getStatusBadge(order.status)}</td>
+
+                    <td className="p-4">{getStatusBadge(order.status, order.payment_status)}</td>
                     <td className="p-4 text-slate-500">
                       {new Date(order.created_at).toLocaleDateString()}
                     </td>
@@ -275,8 +323,9 @@ export default function AdminOrders({ lang = 'uz' }) {
                 <h2 className="text-base font-bold text-slate-900">
                   Buyurtma #{selectedOrder.id}
                 </h2>
-                {getStatusBadge(selectedOrder.status)}
+                {getStatusBadge(selectedOrder.status, selectedOrder.payment_status)}
               </div>
+
               <button
                 onClick={() => setSelectedOrder(null)}
                 className="p-1 rounded-lg text-slate-400 hover:text-slate-700"

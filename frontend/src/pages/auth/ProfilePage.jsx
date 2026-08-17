@@ -129,42 +129,49 @@ export default function ProfilePage({ lang = 'uz' }) {
     return Number(val || 0).toLocaleString('uz-UZ') + " so'm";
   };
 
-  const getStatusBadge = (status) => {
+  const getStatusBadge = (status, paymentStatus) => {
     switch (status) {
       case 'new':
         return (
           <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-            Yangi
+            {lang === 'uz' ? 'Yangi' : 'Новый'}
           </span>
         );
       case 'confirmed':
         return (
           <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-            Tasdiqlangan
+            {lang === 'uz' ? 'Tasdiqlangan' : 'Подтвержден'}
           </span>
         );
       case 'preparing':
         return (
           <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-            Tayyorlanmoqda
+            {lang === 'uz' ? 'Tayyorlanmoqda' : 'Собирается'}
           </span>
         );
       case 'shipping':
         return (
           <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 text-teal-700 border border-teal-200">
-            Yetkazilmoqda
+            {lang === 'uz' ? 'Yetkazilmoqda' : 'В пути'}
           </span>
         );
       case 'delivered':
         return (
           <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-            Yetkazib berildi
+            {lang === 'uz' ? 'Yetkazib berildi' : 'Доставлен'}
           </span>
         );
       case 'cancelled':
+        if (paymentStatus === 'failed') {
+          return (
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+              {lang === 'uz' ? 'To‘lov amalga oshmadi' : 'Оплата не удалась'}
+            </span>
+          );
+        }
         return (
           <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-red-700 border border-red-200">
-            Bekor qilingan
+            {lang === 'uz' ? 'Bekor qilingan' : 'Отменен'}
           </span>
         );
       default:
@@ -175,6 +182,43 @@ export default function ProfilePage({ lang = 'uz' }) {
         );
     }
   };
+
+
+  const getPaymentStatusBadge = (paymentStatus) => {
+    switch (paymentStatus) {
+      case 'paid':
+        return (
+          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+            {lang === 'uz' ? 'To‘lov muvaffaqiyatli' : 'Оплачено'}
+          </span>
+        );
+      case 'pending':
+        return (
+          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+            {lang === 'uz' ? 'To‘lov kutilmoqda' : 'Ожидает оплаты'}
+          </span>
+        );
+      case 'failed':
+        return (
+          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-red-700 border border-red-200">
+            {lang === 'uz' ? 'To‘lovda xatolik' : 'Ошибка оплаты'}
+          </span>
+        );
+      case 'refunded':
+        return (
+          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+            {lang === 'uz' ? 'Qaytarilgan' : 'Возврат средств'}
+          </span>
+        );
+      default:
+        return (
+          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-700">
+            {paymentStatus || 'pending'}
+          </span>
+        );
+    }
+  };
+
 
   const t = {
     uz: {
@@ -379,11 +423,13 @@ export default function ProfilePage({ lang = 'uz' }) {
                               #{order.id}
                             </div>
                             <div>
-                              <div className="flex items-center gap-2 mb-1">
+                              <div className="flex items-center gap-2 mb-1 flex-wrap">
                                 <span className="text-xs font-bold text-navy-900">
-                                  Buyurtma #{order.id}
+                                  {lang === 'uz' ? `Buyurtma #${order.id}` : `Заказ #${order.id}`}
                                 </span>
-                                {getStatusBadge(order.status)}
+                                {getStatusBadge(order.status, order.payment_status)}
+                                {getPaymentStatusBadge(order.payment_status)}
+
                               </div>
                               <p className="text-[11px] text-gray-500 flex items-center gap-2">
                                 <span>{new Date(order.created_at).toLocaleString()}</span>
@@ -416,7 +462,9 @@ export default function ProfilePage({ lang = 'uz' }) {
                           <div className="p-5 bg-gray-50/75 border-t border-gray-200 animate-slide-up space-y-4">
                             {/* Items Snapshot Table */}
                             <div className="bg-white rounded-xl border border-gray-200 p-4 divide-y divide-gray-100 text-xs">
-                              <p className="font-bold text-navy-900 mb-2">Mahsulotlar ro‘yxati:</p>
+                              <p className="font-bold text-navy-900 mb-2">
+                                {lang === 'uz' ? 'Mahsulotlar ro‘yxati:' : 'Список товаров:'}
+                              </p>
                               {order.items?.map((item) => (
                                 <div
                                   key={item.id}
@@ -440,37 +488,41 @@ export default function ProfilePage({ lang = 'uz' }) {
                             {/* Summary row */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs bg-white rounded-xl border border-gray-200 p-4">
                               <div>
-                                <p className="text-gray-500 font-medium">Yetkazib berish manzili:</p>
+                                <p className="text-gray-500 font-medium">
+                                  {lang === 'uz' ? 'Yetkazib berish manzili:' : 'Адрес доставки:'}
+                                </p>
                                 <p className="font-semibold text-navy-900 mt-0.5">{order.address}</p>
                                 {order.note && (
                                   <p className="text-[11px] text-gray-500 mt-1 italic">
-                                    Eslatma: "{order.note}"
+                                    {lang === 'uz' ? 'Eslatma:' : 'Примечание:'} "{order.note}"
                                   </p>
                                 )}
                               </div>
-                              <div className="space-y-1 sm:text-right">
+                              <div className="space-y-1.5 sm:text-right">
                                 <p className="text-gray-500">
-                                  Mahsulotlar: <strong>{formatPrice(order.subtotal)}</strong>
+                                  {lang === 'uz' ? 'Mahsulotlar:' : 'Товары:'}{' '}
+                                  <strong>{formatPrice(order.subtotal)}</strong>
                                 </p>
                                 <p className="text-gray-500">
-                                  Yetkazib berish:{' '}
+                                  {lang === 'uz' ? 'Yetkazib berish:' : 'Доставка:'}{' '}
                                   <strong>
                                     {order.delivery_price > 0
                                       ? formatPrice(order.delivery_price)
-                                      : 'Bepul'}
+                                      : (lang === 'uz' ? 'Bepul' : 'Бесплатно')}
                                   </strong>
                                 </p>
-                                <p className="text-gray-500">
-                                  To‘lov usuli:{' '}
-                                  <strong className="uppercase font-mono">
+                                <div className="flex items-center sm:justify-end gap-2 text-gray-500 pt-1">
+                                  <span>{lang === 'uz' ? 'To‘lov usuli:' : 'Способ оплаты:'}</span>
+                                  <strong className="uppercase font-mono text-navy-900 bg-gray-100 px-1.5 py-0.5 rounded">
                                     {order.payment_method}
-                                  </strong>{' '}
-                                  ({order.payment_status})
-                                </p>
+                                  </strong>
+                                  {getPaymentStatusBadge(order.payment_status)}
+                                </div>
                               </div>
                             </div>
                           </div>
                         )}
+
                       </div>
                     );
                   })}

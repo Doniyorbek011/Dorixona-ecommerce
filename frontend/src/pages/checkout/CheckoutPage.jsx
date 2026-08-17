@@ -82,9 +82,18 @@ export default function CheckoutPage({ lang = 'uz' }) {
       };
 
       const res = await orderService.createOrder(payload);
-      setOrderSuccess(res.order);
       // Refresh cart to show 0 items
       fetchCart();
+
+      const redirectUrl = res.payment?.redirect_url || res.redirect_url;
+      const requiresRedirect = res.payment?.requires_redirect ?? res.requires_redirect;
+
+      if (requiresRedirect && redirectUrl) {
+        window.location.href = redirectUrl;
+        return;
+      }
+
+      setOrderSuccess(res.order);
     } catch (err) {
       setError(
         err.response?.data?.message ||
@@ -117,7 +126,14 @@ export default function CheckoutPage({ lang = 'uz' }) {
       paymentTitle: 'To‘lov usulini tanlang',
       cashPay: 'Naqd pul (Kuryerga qabul qilganda to‘lash)',
       cashDesc: 'Mahsulotni qo‘lingizga olganingizdan so‘ng naqd pulda to‘laysiz',
-      comingSoon: 'Tez kunda',
+      paymePay: 'Payme orqali to‘lov',
+      paymeDesc: 'Payme ilovasi yoki kartangiz orqali xavfsiz onlayn to‘lov',
+      clickPay: 'Click orqali to‘lov',
+      clickDesc: 'Click Up ilovasi yoki Click tizimi orqali tezkor onlayn to‘lov',
+      uzumPay: 'Uzum Bank orqali to‘lov',
+      uzumDesc: 'Uzum Bank ilovasi yoki Uzum to‘lov tizimi orqali onlayn to‘lov',
+      mainBadge: 'Kuryerga',
+      onlineBadge: 'Onlayn',
       orderSummary: 'Buyurtma tarkibi',
       subtotal: 'Mahsulotlar summasi:',
       delivery: 'Yetkazib berish:',
@@ -151,7 +167,14 @@ export default function CheckoutPage({ lang = 'uz' }) {
       paymentTitle: 'Способ оплаты',
       cashPay: 'Наличными при получении (Курьеру)',
       cashDesc: 'Оплата наличными после проверки заказа курьеру',
-      comingSoon: 'Скоро',
+      paymePay: 'Оплата через Payme',
+      paymeDesc: 'Безопасная онлайн-оплата через приложение или карту Payme',
+      clickPay: 'Оплата через Click',
+      clickDesc: 'Быстрая оплата через Click Up или онлайн-систему Click',
+      uzumPay: 'Оплата через Uzum Bank',
+      uzumDesc: 'Оплата через мобильное приложение Uzum Bank',
+      mainBadge: 'Курьеру',
+      onlineBadge: 'Онлайн',
       orderSummary: 'Ваш заказ',
       subtotal: 'Стоимость товаров:',
       delivery: 'Доставка:',
@@ -393,8 +416,14 @@ export default function CheckoutPage({ lang = 'uz' }) {
             </h2>
 
             <div className="space-y-3">
-              {/* Cash Option (Active) */}
-              <label className="relative flex items-start gap-4 p-4 rounded-2xl border-2 border-medical-600 bg-medical-50/40 cursor-pointer transition-all">
+              {/* Option 1: Cash */}
+              <label
+                className={`relative flex items-start gap-4 p-4 rounded-2xl border-2 cursor-pointer transition-all ${
+                  formData.payment_method === 'cash'
+                    ? 'border-medical-600 bg-medical-50/40 shadow-xs'
+                    : 'border-gray-200 hover:border-gray-300 bg-white'
+                }`}
+              >
                 <input
                   type="radio"
                   name="payment_method"
@@ -405,40 +434,111 @@ export default function CheckoutPage({ lang = 'uz' }) {
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <Banknote className="w-4 h-4 text-teal-600" />
+                    <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center">
+                      <Banknote className="w-4 h-4" />
+                    </div>
                     <p className="text-xs font-bold text-navy-900">{currentT.cashPay}</p>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-100 text-teal-800">
-                      Asosiy
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 ml-auto sm:ml-0">
+                      {currentT.mainBadge}
                     </span>
                   </div>
-                  <p className="text-[11px] text-gray-500 mt-0.5">{currentT.cashDesc}</p>
+                  <p className="text-[11px] text-gray-500 mt-1">{currentT.cashDesc}</p>
                 </div>
               </label>
 
-              {/* Payme / Click / Uzum (Future placeholders) */}
-              <div className="opacity-60 pointer-events-none grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-                <div className="p-3 rounded-2xl border border-gray-200 bg-gray-50 flex items-center justify-between">
-                  <span className="text-xs font-bold text-navy-900">Payme</span>
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-gray-200 text-gray-600">
-                    {currentT.comingSoon}
-                  </span>
+              {/* Option 2: Payme */}
+              <label
+                className={`relative flex items-start gap-4 p-4 rounded-2xl border-2 cursor-pointer transition-all ${
+                  formData.payment_method === 'payme'
+                    ? 'border-teal-500 bg-teal-50/40 shadow-xs'
+                    : 'border-gray-200 hover:border-gray-300 bg-white'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="payment_method"
+                  value="payme"
+                  checked={formData.payment_method === 'payme'}
+                  onChange={handleChange}
+                  className="w-4 h-4 text-teal-600 focus:ring-teal-500 mt-1 border-gray-300"
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-teal-600 text-white flex items-center justify-center font-black text-[11px] tracking-tighter">
+                      P
+                    </div>
+                    <p className="text-xs font-bold text-navy-900">{currentT.paymePay}</p>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-100 text-teal-800 ml-auto sm:ml-0">
+                      {currentT.onlineBadge}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-gray-500 mt-1">{currentT.paymeDesc}</p>
                 </div>
-                <div className="p-3 rounded-2xl border border-gray-200 bg-gray-50 flex items-center justify-between">
-                  <span className="text-xs font-bold text-navy-900">Click</span>
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-gray-200 text-gray-600">
-                    {currentT.comingSoon}
-                  </span>
+              </label>
+
+              {/* Option 3: Click */}
+              <label
+                className={`relative flex items-start gap-4 p-4 rounded-2xl border-2 cursor-pointer transition-all ${
+                  formData.payment_method === 'click'
+                    ? 'border-blue-500 bg-blue-50/40 shadow-xs'
+                    : 'border-gray-200 hover:border-gray-300 bg-white'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="payment_method"
+                  value="click"
+                  checked={formData.payment_method === 'click'}
+                  onChange={handleChange}
+                  className="w-4 h-4 text-blue-600 focus:ring-blue-500 mt-1 border-gray-300"
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center font-black text-[11px] tracking-tighter">
+                      C
+                    </div>
+                    <p className="text-xs font-bold text-navy-900">{currentT.clickPay}</p>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 ml-auto sm:ml-0">
+                      {currentT.onlineBadge}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-gray-500 mt-1">{currentT.clickDesc}</p>
                 </div>
-                <div className="p-3 rounded-2xl border border-gray-200 bg-gray-50 flex items-center justify-between">
-                  <span className="text-xs font-bold text-navy-900">Uzum Bank</span>
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-gray-200 text-gray-600">
-                    {currentT.comingSoon}
-                  </span>
+              </label>
+
+              {/* Option 4: Uzum Bank */}
+              <label
+                className={`relative flex items-start gap-4 p-4 rounded-2xl border-2 cursor-pointer transition-all ${
+                  formData.payment_method === 'uzum'
+                    ? 'border-purple-500 bg-purple-50/40 shadow-xs'
+                    : 'border-gray-200 hover:border-gray-300 bg-white'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="payment_method"
+                  value="uzum"
+                  checked={formData.payment_method === 'uzum'}
+                  onChange={handleChange}
+                  className="w-4 h-4 text-purple-600 focus:ring-purple-500 mt-1 border-gray-300"
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-purple-600 text-white flex items-center justify-center font-black text-[11px] tracking-tighter">
+                      U
+                    </div>
+                    <p className="text-xs font-bold text-navy-900">{currentT.uzumPay}</p>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 ml-auto sm:ml-0">
+                      {currentT.onlineBadge}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-gray-500 mt-1">{currentT.uzumDesc}</p>
                 </div>
-              </div>
+              </label>
             </div>
           </div>
         </div>
+
 
         {/* Right Column: Order Summary */}
         <div className="lg:col-span-1">

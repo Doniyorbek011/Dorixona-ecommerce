@@ -107,7 +107,7 @@ class OrderController extends Controller
                     'status' => 'new',
                 ]);
 
-                // Create Order Items and decrement stock
+                // Create Order Items and handle conditional stock decrement
                 foreach ($cartItems as $item) {
                     $product = $item->product;
                     $unitPrice = $product->final_price;
@@ -122,8 +122,20 @@ class OrderController extends Controller
                         'subtotal' => $itemSubtotal,
                     ]);
 
-                    // Decrement stock
-                    $product->decrement('stock', $item->quantity);
+                    /*
+                    |--------------------------------------------------------------------------
+                    | BUSINESS RULE: INVENTORY / STOCK DEDUCTION
+                    |--------------------------------------------------------------------------
+                    | - For Cash on delivery ('cash'): Stock is decremented immediately because
+                    |   the order is confirmed directly for courier delivery.
+                    | - For Online gateways ('click', 'payme', 'uzum'): Stock is NOT decremented
+                    |   at order creation. The order stays in 'pending' payment status and inventory
+                    |   remains available for other customers until the payment webhook callback
+                    |   verifies the transaction and confirms the payment.
+                    */
+                    if ($request->payment_method === 'cash') {
+                        $product->decrement('stock', $item->quantity);
+                    }
                 }
 
                 // Clear user's shopping cart
@@ -131,6 +143,7 @@ class OrderController extends Controller
 
                 return $newOrder;
             });
+
 
             // 5. Initialize payment processing
             $paymentResult = $this->paymentService->process($order, $request->payment_method);
@@ -142,7 +155,10 @@ class OrderController extends Controller
                 'message' => 'Buyurtmangiz muvaffaqiyatli qabul qilindi!',
                 'order' => $order->load(['items.product', 'user']),
                 'payment' => $paymentResult,
+                'requires_redirect' => $paymentResult['requires_redirect'] ?? false,
+                'redirect_url' => $paymentResult['redirect_url'] ?? null,
             ], Response::HTTP_CREATED);
+
         } catch (\Exception $e) {
             Cache::forget($lockKey);
             return response()->json([
