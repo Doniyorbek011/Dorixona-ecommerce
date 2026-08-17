@@ -19,6 +19,8 @@ class CreateOrderRequest extends FormRequest
             'customer_name' => ['required', 'string', 'max:255'],
             'phone' => ['required', 'string', 'max:30'],
             'address' => ['required', 'string', 'max:500'],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'note' => ['nullable', 'string', 'max:1000'],
             'payment_method' => ['required', 'string', 'in:cash,payme,click,uzum,card'],
             'idempotency_key' => ['nullable', 'string', 'max:64'],
@@ -26,6 +28,7 @@ class CreateOrderRequest extends FormRequest
             'items.*.product_id' => ['required_with:items', 'integer', 'exists:products,id'],
             'items.*.quantity' => ['required_with:items', 'integer', 'min:1'],
         ];
+
     }
 
     public function messages(): array

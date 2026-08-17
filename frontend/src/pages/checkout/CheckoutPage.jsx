@@ -16,10 +16,12 @@ import {
   Pill,
   ShoppingBag,
   Sparkles,
+  Navigation,
 } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
 import useCartStore from '../../store/cartStore';
 import orderService from '../../services/orderService';
+import LocationPickerModal from '../../components/common/LocationPickerModal';
 
 export default function CheckoutPage({ lang = 'uz' }) {
   const { user } = useAuth();
@@ -30,10 +32,13 @@ export default function CheckoutPage({ lang = 'uz' }) {
     customer_name: user?.name || '',
     phone: user?.phone || '',
     address: user?.address || '',
+    latitude: null,
+    longitude: null,
     note: '',
     payment_method: 'cash',
   });
 
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [orderSuccess, setOrderSuccess] = useState(null);
@@ -76,6 +81,8 @@ export default function CheckoutPage({ lang = 'uz' }) {
         customer_name: formData.customer_name.trim(),
         phone: formData.phone.trim(),
         address: formData.address.trim(),
+        latitude: formData.latitude ?? null,
+        longitude: formData.longitude ?? null,
         note: formData.note.trim() || null,
         payment_method: formData.payment_method,
         idempotency_key: `order_${Date.now()}_${Math.random().toString(36).substring(7)}`,
@@ -118,6 +125,7 @@ export default function CheckoutPage({ lang = 'uz' }) {
       setIsSubmitting(false);
     }
   };
+
 
 
   const formatPrice = (val) => {
@@ -169,6 +177,8 @@ export default function CheckoutPage({ lang = 'uz' }) {
       guestBannerTitle: 'Ro‘yxatdan o‘tish shart emas',
       guestBannerText: 'Buyurtma berish uchun ro‘yxatdan o‘tish shart emas. Hisob ochsangiz, buyurtmalar tarixingizni kuzatib borishingiz mumkin bo‘ladi.',
       guestBannerRegister: 'Ro‘yxatdan o‘tish',
+      pickOnMapBtn: 'Xaritadan belgilash',
+      mapLocationPicked: 'Manzil xaritada belgilandi',
     },
     ru: {
       title: 'Оформление заказа',
@@ -214,7 +224,10 @@ export default function CheckoutPage({ lang = 'uz' }) {
       guestBannerTitle: 'Регистрация не требуется',
       guestBannerText: 'Для оформления заказа регистрация не требуется. Создав аккаунт, вы сможете отслеживать историю заказов.',
       guestBannerRegister: 'Зарегистрироваться',
+      pickOnMapBtn: 'Указать на карте',
+      mapLocationPicked: 'Адрес указан на карте',
     },
+
   };
 
   const currentT = t[lang];
@@ -421,9 +434,28 @@ export default function CheckoutPage({ lang = 'uz' }) {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-navy-900 mb-1.5">
-                  {currentT.addressLabel} <span className="text-red-500">*</span>
-                </label>
+                <div className="flex items-center justify-between mb-1.5 flex-wrap gap-2">
+                  <label className="block text-xs font-semibold text-navy-900">
+                    {currentT.addressLabel} <span className="text-red-500">*</span>
+                  </label>
+
+                  <div className="flex items-center gap-2">
+                    {formData.latitude && formData.longitude && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-teal-700 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded-full animate-fade-in">
+                        📍 {currentT.mapLocationPicked}
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setShowLocationPicker(true)}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 active:bg-teal-200 border border-teal-200 transition-colors shadow-2xs cursor-pointer"
+                    >
+                      <Navigation className="w-3.5 h-3.5 text-teal-600" />
+                      <span>{currentT.pickOnMapBtn}</span>
+                    </button>
+                  </div>
+                </div>
+
                 <div className="relative rounded-xl border border-gray-200 focus-within:border-medical-500 focus-within:ring-1 focus-within:ring-medical-500">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
                     <MapPin className="w-4 h-4" />
@@ -439,6 +471,7 @@ export default function CheckoutPage({ lang = 'uz' }) {
                   />
                 </div>
               </div>
+
 
               <div>
                 <label className="block text-xs font-semibold text-navy-900 mb-1.5">
@@ -687,6 +720,25 @@ export default function CheckoutPage({ lang = 'uz' }) {
           </div>
         </div>
       </form>
+
+      {/* Interactive Leaflet Location Picker Modal */}
+      <LocationPickerModal
+        isOpen={showLocationPicker}
+        onClose={() => setShowLocationPicker(false)}
+        initialLat={formData.latitude || 41.299496}
+        initialLng={formData.longitude || 69.240073}
+        initialAddress={formData.address}
+        lang={lang}
+        onConfirm={({ address, latitude, longitude }) => {
+          setFormData((prev) => ({
+            ...prev,
+            address: address || prev.address,
+            latitude,
+            longitude,
+          }));
+        }}
+      />
     </div>
   );
 }
+

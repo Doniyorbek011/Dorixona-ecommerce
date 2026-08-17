@@ -55,12 +55,7 @@ export default function CartPage({ lang = 'uz' }) {
   };
 
   const handleCheckout = () => {
-    if (!isAuthenticated) {
-      // Redirect to login with return path to checkout
-      navigate('/login', { state: { from: { pathname: '/checkout' } } });
-    } else {
-      navigate('/checkout');
-    }
+    navigate('/checkout');
   };
 
   const t = {
@@ -85,7 +80,7 @@ export default function CartPage({ lang = 'uz' }) {
       promoSuccess: 'Promokod faollashtirildi (-10%)',
       totalToPay: 'Jami to‘lov:',
       checkoutBtn: 'Buyurtmani rasmiylashtirish',
-      guestCheckoutNote: 'Buyurtma berish uchun tizimga kirishingiz lozim',
+      guestCheckoutNote: 'Ro‘yxatdan o‘tmasdan ham buyurtma berishingiz mumkin',
       feat1: '100% Sertifikatlangan original mahsulotlar',
       feat2: 'Tezkor yetkazib berish (2 soatda)',
       feat3: 'Xavfsiz va qulay to‘lov usullari',
@@ -112,13 +107,14 @@ export default function CartPage({ lang = 'uz' }) {
       promoSuccess: 'Промокод активирован (-10%)',
       totalToPay: 'Итого к оплате:',
       checkoutBtn: 'Оформить заказ',
-      guestCheckoutNote: 'Для оформления заказа необходимо войти в аккаунт',
+      guestCheckoutNote: 'Вы можете оформить заказ без регистрации',
       feat1: '100% Сертифицированные препараты',
       feat2: 'Быстрая доставка за 2 часа',
       feat3: 'Безопасные способы оплаты',
       continueShopping: 'Продолжить покупки',
     },
   };
+
 
   const currentT = t[lang];
 
@@ -420,10 +416,11 @@ export default function CartPage({ lang = 'uz' }) {
               </button>
 
               {!isAuthenticated && (
-                <p className="text-[11px] text-amber-700 bg-amber-50 rounded-xl p-2.5 mt-2.5 text-center font-medium border border-amber-200">
+                <p className="text-[11px] text-teal-700 bg-teal-50 rounded-xl p-2.5 mt-2.5 text-center font-medium border border-teal-200">
                   {currentT.guestCheckoutNote}
                 </p>
               )}
+
             </div>
 
             {/* Assurances */}
