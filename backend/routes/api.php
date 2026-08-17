@@ -53,6 +53,9 @@ Route::get('/products/search/autocomplete', [ProductController::class, 'autocomp
 Route::get('/products/brands', [ProductController::class, 'brands']);
 Route::get('/products/{idOrSlug}', [ProductController::class, 'show']);
 
+// Public Order Creation (supports both guest and authenticated users)
+Route::post('/orders', [OrderController::class, 'store'])->middleware('throttle:15,1');
+
 /*
 |--------------------------------------------------------------------------
 | Authenticated User Routes (Sanctum)
@@ -74,12 +77,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/sync', [CartController::class, 'sync']);
     });
 
-    // Orders endpoints (Throttled to prevent rapid submission attacks)
+    // Customer Order History (Authenticated only)
     Route::prefix('orders')->group(function () {
         Route::get('/', [OrderController::class, 'index']);
-        Route::post('/', [OrderController::class, 'store'])->middleware('throttle:15,1');
         Route::get('/{id}', [OrderController::class, 'show']);
     });
+
 
     /*
     |--------------------------------------------------------------------------

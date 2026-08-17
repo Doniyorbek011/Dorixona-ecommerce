@@ -69,15 +69,9 @@ function AppContent({ lang, setLang }) {
             <Route path="/contact" element={<ContactPage lang={lang} />} />
             <Route path="/cart" element={<CartPage lang={lang} />} />
 
-            {/* Protected Checkout route */}
-            <Route
-              path="/checkout"
-              element={
-                <ProtectedRoute>
-                  <CheckoutPage lang={lang} />
-                </ProtectedRoute>
-              }
-            />
+            {/* Public Checkout route (supports guest & authenticated) */}
+            <Route path="/checkout" element={<CheckoutPage lang={lang} />} />
+
 
             {/* Guest-only auth routes */}
             <Route

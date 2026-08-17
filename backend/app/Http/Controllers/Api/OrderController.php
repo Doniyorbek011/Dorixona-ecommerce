@@ -25,14 +25,16 @@ class OrderController extends Controller
     ) {}
 
     /**
-     * Create a new order from the authenticated user's current shopping cart.
+     * Create a new order (supports both authenticated users and guest checkout).
      */
     public function store(CreateOrderRequest $request): JsonResponse
     {
-        $user = $request->user();
+        // 1. Resolve user optionally (null for guests)
+        $user = auth('sanctum')->user() ?: $request->user();
 
-        // 1. Double-click / Idempotency protection lock
-        $idempotencyKey = $request->input('idempotency_key') ?: "order_lock_user_{$user->id}";
+        // 2. Double-click / Idempotency protection lock
+        $idempotencyKey = $request->input('idempotency_key')
+            ?: ($user ? "order_lock_user_{$user->id}" : "order_lock_guest_" . md5($request->ip() . '_' . $request->phone));
         $lockKey = "order_submission_lock_{$idempotencyKey}";
 
         if (!Cache::add($lockKey, true, now()->addSeconds(5))) {
@@ -43,22 +45,55 @@ class OrderController extends Controller
         }
 
         try {
-            // 2. Fetch user's cart items
-            $cartItems = CartItem::with('product')
-                ->where('user_id', $user->id)
-                ->get();
+            // 3. Resolve cart items
+            $orderItemsData = [];
 
-            if ($cartItems->isEmpty()) {
-                Cache::forget($lockKey);
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Savatingiz bo‘sh. Buyurtma berish uchun mahsulot tanlang.',
-                ], Response::HTTP_UNPROCESSABLE_ENTITY);
+            if ($user) {
+                // Authenticated user: fetch from database cart
+                $cartItems = CartItem::with('product')
+                    ->where('user_id', $user->id)
+                    ->get();
+
+                if ($cartItems->isEmpty()) {
+                    Cache::forget($lockKey);
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Savatingiz bo‘sh. Buyurtma berish uchun mahsulot tanlang.',
+                    ], Response::HTTP_UNPROCESSABLE_ENTITY);
+                }
+
+                foreach ($cartItems as $item) {
+                    $orderItemsData[] = [
+                        'product' => $item->product,
+                        'quantity' => (int)$item->quantity,
+                    ];
+                }
+            } else {
+                // Guest customer: read items array from request body
+                $inputItems = $request->input('items', []);
+
+                if (empty($inputItems)) {
+                    Cache::forget($lockKey);
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Savatingiz bo‘sh. Buyurtma berish uchun mahsulot tanlang.',
+                    ], Response::HTTP_UNPROCESSABLE_ENTITY);
+                }
+
+                foreach ($inputItems as $item) {
+                    $product = Product::find($item['product_id']);
+                    $orderItemsData[] = [
+                        'product' => $product,
+                        'quantity' => (int)($item['quantity'] ?? 1),
+                    ];
+                }
             }
 
-            // 3. Stock availability verification
-            foreach ($cartItems as $item) {
-                $product = $item->product;
+            // 4. Stock availability & product active status verification
+            foreach ($orderItemsData as $itemData) {
+                $product = $itemData['product'];
+                $quantity = $itemData['quantity'];
+
                 if (!$product || !$product->status) {
                     Cache::forget($lockKey);
                     return response()->json([
@@ -67,7 +102,7 @@ class OrderController extends Controller
                     ], Response::HTTP_UNPROCESSABLE_ENTITY);
                 }
 
-                if ($product->stock < $item->quantity) {
+                if ($product->stock < $quantity) {
                     Cache::forget($lockKey);
                     return response()->json([
                         'status' => 'error',
@@ -76,14 +111,16 @@ class OrderController extends Controller
                 }
             }
 
-            // 4. Execute atomic transaction
-            $order = DB::transaction(function () use ($user, $cartItems, $request) {
+            // 5. Execute atomic order creation transaction
+            $order = DB::transaction(function () use ($user, $orderItemsData, $request) {
                 $subtotal = 0.00;
 
-                // Pre-calculate subtotal with live snapshot prices
-                foreach ($cartItems as $item) {
-                    $unitPrice = $item->product->final_price;
-                    $subtotal += ($unitPrice * $item->quantity);
+                // Pre-calculate subtotal strictly using database snapshot prices (never trust client)
+                foreach ($orderItemsData as $itemData) {
+                    $product = $itemData['product'];
+                    $quantity = $itemData['quantity'];
+                    $unitPrice = $product->final_price;
+                    $subtotal += ($unitPrice * $quantity);
                 }
 
                 $deliveryPrice = ($subtotal >= self::FREE_DELIVERY_THRESHOLD || $subtotal === 0.00)
@@ -92,9 +129,9 @@ class OrderController extends Controller
 
                 $total = $subtotal + $deliveryPrice;
 
-                // Create Order record
+                // Create Order record (user_id is null for guests)
                 $newOrder = Order::create([
-                    'user_id' => $user->id,
+                    'user_id' => $user?->id,
                     'customer_name' => $request->customer_name,
                     'phone' => $request->phone,
                     'address' => $request->address,
@@ -108,17 +145,18 @@ class OrderController extends Controller
                 ]);
 
                 // Create Order Items and handle conditional stock decrement
-                foreach ($cartItems as $item) {
-                    $product = $item->product;
+                foreach ($orderItemsData as $itemData) {
+                    $product = $itemData['product'];
+                    $quantity = $itemData['quantity'];
                     $unitPrice = $product->final_price;
-                    $itemSubtotal = $unitPrice * $item->quantity;
+                    $itemSubtotal = $unitPrice * $quantity;
 
                     OrderItem::create([
                         'order_id' => $newOrder->id,
                         'product_id' => $product->id,
                         'product_name' => $product->name, // Snapshot
                         'price' => $unitPrice,            // Snapshot
-                        'quantity' => $item->quantity,
+                        'quantity' => $quantity,
                         'subtotal' => $itemSubtotal,
                     ]);
 
@@ -134,18 +172,19 @@ class OrderController extends Controller
                     |   verifies the transaction and confirms the payment.
                     */
                     if ($request->payment_method === 'cash') {
-                        $product->decrement('stock', $item->quantity);
+                        $product->decrement('stock', $quantity);
                     }
                 }
 
-                // Clear user's shopping cart
-                CartItem::where('user_id', $user->id)->delete();
+                // If authenticated, clear user's database shopping cart
+                if ($user) {
+                    CartItem::where('user_id', $user->id)->delete();
+                }
 
                 return $newOrder;
             });
 
-
-            // 5. Initialize payment processing
+            // 6. Initialize payment processing
             $paymentResult = $this->paymentService->process($order, $request->payment_method);
 
             Cache::forget($lockKey);
@@ -163,7 +202,7 @@ class OrderController extends Controller
             Cache::forget($lockKey);
             return response()->json([
                 'status' => 'error',
-                'message' => 'Buyurtma yaratishda kutilmagan xatolik yuz berdi: ' . $e->getMessage(),
+                'message' => 'Buyurtmani rasmiylashtirishda kutilmagan xatolik yuz berdi: ' . $e->getMessage(),
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }

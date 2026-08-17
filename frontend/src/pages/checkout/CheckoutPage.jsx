@@ -23,7 +23,7 @@ import orderService from '../../services/orderService';
 
 export default function CheckoutPage({ lang = 'uz' }) {
   const { user } = useAuth();
-  const { items, subtotal, deliveryPrice, isFreeDelivery, total, fetchCart } = useCartStore();
+  const { items, subtotal, deliveryPrice, isFreeDelivery, total, fetchCart, clearCart } = useCartStore();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -81,9 +81,22 @@ export default function CheckoutPage({ lang = 'uz' }) {
         idempotency_key: `order_${Date.now()}_${Math.random().toString(36).substring(7)}`,
       };
 
+      // For guest checkout: attach items from local cart
+      if (!user) {
+        payload.items = items.map((i) => ({
+          product_id: i.product_id || i.id,
+          quantity: i.quantity,
+        }));
+      }
+
       const res = await orderService.createOrder(payload);
-      // Refresh cart to show 0 items
-      fetchCart();
+
+      // Clear/refresh cart
+      if (!user) {
+        clearCart();
+      } else {
+        fetchCart();
+      }
 
       const redirectUrl = res.payment?.redirect_url || res.redirect_url;
       const requiresRedirect = res.payment?.requires_redirect ?? res.requires_redirect;
@@ -105,6 +118,7 @@ export default function CheckoutPage({ lang = 'uz' }) {
       setIsSubmitting(false);
     }
   };
+
 
   const formatPrice = (val) => {
     return Number(val || 0).toLocaleString('uz-UZ') + " so'm";
@@ -146,11 +160,15 @@ export default function CheckoutPage({ lang = 'uz' }) {
       orderIdLabel: 'Buyurtma raqami:',
       deliveryEstimate: 'Yetkazib berish muddati: 2 soat ichida',
       viewOrdersBtn: 'Buyurtmalar tarixiga o‘tish',
+      registerToTrack: 'Hisob ochish va buyurtmani kuzatish',
       backToHomeBtn: 'Bosh sahifaga qaytish',
       emptyCartError: 'Savatingizda mahsulotlar mavjud emas.',
       goToCatalog: 'Katalogga o‘tish',
       feat1: '100% Sertifikatlangan dorilar',
       feat2: 'Tezkor kuryer xizmati',
+      guestBannerTitle: 'Ro‘yxatdan o‘tish shart emas',
+      guestBannerText: 'Buyurtma berish uchun ro‘yxatdan o‘tish shart emas. Hisob ochsangiz, buyurtmalar tarixingizni kuzatib borishingiz mumkin bo‘ladi.',
+      guestBannerRegister: 'Ro‘yxatdan o‘tish',
     },
     ru: {
       title: 'Оформление заказа',
@@ -187,11 +205,15 @@ export default function CheckoutPage({ lang = 'uz' }) {
       orderIdLabel: 'Номер заказа:',
       deliveryEstimate: 'Срок доставки: в течение 2 часов',
       viewOrdersBtn: 'Перейти к истории заказов',
+      registerToTrack: 'Создать аккаунт для отслеживания',
       backToHomeBtn: 'На главную',
       emptyCartError: 'Ваша корзина пуста.',
       goToCatalog: 'В каталог',
       feat1: '100% Сертифицированные препараты',
       feat2: 'Быстрая доставка курьером',
+      guestBannerTitle: 'Регистрация не требуется',
+      guestBannerText: 'Для оформления заказа регистрация не требуется. Создав аккаунт, вы сможете отслеживать историю заказов.',
+      guestBannerRegister: 'Зарегистрироваться',
     },
   };
 
@@ -253,13 +275,23 @@ export default function CheckoutPage({ lang = 'uz' }) {
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link
-              to="/profile"
-              className="w-full sm:w-auto px-6 py-3 rounded-xl bg-medical-600 hover:bg-medical-700 text-white font-semibold text-xs transition-colors shadow-xs flex items-center justify-center gap-2"
-            >
-              <ShoppingBag className="w-4 h-4" />
-              <span>{currentT.viewOrdersBtn}</span>
-            </Link>
+            {user ? (
+              <Link
+                to="/profile"
+                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-medical-600 hover:bg-medical-700 text-white font-semibold text-xs transition-colors shadow-xs flex items-center justify-center gap-2"
+              >
+                <ShoppingBag className="w-4 h-4" />
+                <span>{currentT.viewOrdersBtn}</span>
+              </Link>
+            ) : (
+              <Link
+                to="/register"
+                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-medical-600 hover:bg-medical-700 text-white font-semibold text-xs transition-colors shadow-xs flex items-center justify-center gap-2"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>{currentT.registerToTrack}</span>
+              </Link>
+            )}
 
             <Link
               to="/"
@@ -307,12 +339,33 @@ export default function CheckoutPage({ lang = 'uz' }) {
         <p className="text-xs text-gray-500 mt-1">{currentT.subtitle}</p>
       </div>
 
+      {/* Guest checkout informative note */}
+      {!user && (
+        <div className="mb-6 p-4 bg-teal-50 border border-teal-200 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-slide-up">
+          <div className="flex items-start gap-3">
+            <Sparkles className="w-5 h-5 text-teal-600 mt-0.5 shrink-0" />
+            <div>
+              <h4 className="text-xs font-bold text-navy-900">{currentT.guestBannerTitle}</h4>
+              <p className="text-xs text-gray-600 mt-0.5">{currentT.guestBannerText}</p>
+            </div>
+          </div>
+          <Link
+            to="/register"
+            state={{ from: { pathname: '/checkout' } }}
+            className="shrink-0 px-3.5 py-2 rounded-xl bg-white border border-teal-200 text-teal-700 hover:bg-teal-600 hover:text-white transition-colors text-xs font-semibold shadow-2xs"
+          >
+            {currentT.guestBannerRegister}
+          </Link>
+        </div>
+      )}
+
       {error && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl text-xs text-red-700 flex items-start gap-3 animate-slide-up">
           <AlertCircle className="w-5 h-5 mt-0.5 shrink-0" />
           <span>{error}</span>
         </div>
       )}
+
 
       <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column: Delivery Form & Payment Selection */}
