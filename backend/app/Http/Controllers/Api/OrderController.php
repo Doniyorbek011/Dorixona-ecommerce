@@ -135,6 +135,8 @@ class OrderController extends Controller
                     'customer_name' => $request->customer_name,
                     'phone' => $request->phone,
                     'address' => $request->address,
+                    'latitude' => $request->latitude,
+                    'longitude' => $request->longitude,
                     'note' => $request->note,
                     'subtotal' => $subtotal,
                     'delivery_price' => $deliveryPrice,
