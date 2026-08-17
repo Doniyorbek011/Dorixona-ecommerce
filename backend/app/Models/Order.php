@@ -16,8 +16,6 @@ class Order extends Model
         'customer_name',
         'phone',
         'address',
-        'latitude',
-        'longitude',
         'note',
         'subtotal',
         'delivery_price',
@@ -33,8 +31,6 @@ class Order extends Model
             'subtotal' => 'decimal:2',
             'delivery_price' => 'decimal:2',
             'total' => 'decimal:2',
-            'latitude' => 'decimal:7',
-            'longitude' => 'decimal:7',
         ];
     }
 

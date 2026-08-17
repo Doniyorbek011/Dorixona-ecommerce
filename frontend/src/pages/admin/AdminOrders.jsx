@@ -13,7 +13,6 @@ import {
   CreditCard,
   Banknote,
   FileText,
-  ExternalLink,
 } from 'lucide-react';
 
 import adminService from '../../services/adminService';
@@ -404,29 +403,11 @@ export default function AdminOrders({ lang = 'uz' }) {
               </div>
 
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
-                <div className="flex items-center justify-between flex-wrap gap-1">
-                  <p className="font-bold text-slate-900 flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-teal-600" />
-                    <span>Yetkazib berish manzili</span>
-                  </p>
-                  {selectedOrder.latitude && selectedOrder.longitude && (
-                    <a
-                      href={`https://www.openstreetmap.org/?mlat=${selectedOrder.latitude}&mlon=${selectedOrder.longitude}#map=17/${selectedOrder.latitude}/${selectedOrder.longitude}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-teal-50 hover:bg-teal-100 active:bg-teal-200 text-teal-700 text-[11px] font-bold border border-teal-200 transition-colors shadow-2xs"
-                    >
-                      <ExternalLink className="w-3 h-3" />
-                      <span>Xaritada ko‘rish</span>
-                    </a>
-                  )}
-                </div>
+                <p className="font-bold text-slate-900 flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-teal-600" />
+                  <span>Yetkazib berish manzili</span>
+                </p>
                 <p className="text-slate-700">{selectedOrder.address}</p>
-                {selectedOrder.latitude && selectedOrder.longitude && (
-                  <p className="text-[10px] text-slate-400 font-mono">
-                    📍 {Number(selectedOrder.latitude).toFixed(6)}, {Number(selectedOrder.longitude).toFixed(6)}
-                  </p>
-                )}
                 {selectedOrder.note && (
                   <p className="text-[11px] text-slate-500 italic">
                     Eslatma: "{selectedOrder.note}"
