@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   MapPin,
-  Navigation,
   Check,
   X,
   Loader2,
   AlertCircle,
   Search,
   Crosshair,
+  RotateCw,
 } from 'lucide-react';
 import L from 'leaflet';
 
@@ -85,6 +85,7 @@ export default function LocationPickerModal({
       addressPlaceholder: 'Manzil avtomatik aniqlanmoqda...',
       confirmLocation: 'Manzilni tasdiqlash',
       cancel: 'Bekor qilish',
+      retry: 'Qayta urinish',
       fallbackGeoError: 'Manzilni avtomatik aniqlab bo‘lmadi, iltimos qo‘lda kiriting.',
       geoPermissionDenied: 'Joylashuvni aniqlashga ruxsat berilmadi.',
       geoUnavailable: 'Joylashuv ma’lumoti mavjud emas.',
@@ -99,6 +100,7 @@ export default function LocationPickerModal({
       addressPlaceholder: 'Адрес определяется автоматически...',
       confirmLocation: 'Подтвердить адрес',
       cancel: 'Отмена',
+      retry: 'Повторить',
       fallbackGeoError: 'Не удалось определить адрес автоматически, укажите вручную.',
       geoPermissionDenied: 'Доступ к геолокации запрещен.',
       geoUnavailable: 'Информация о местоположении недоступна.',
@@ -118,6 +120,11 @@ export default function LocationPickerModal({
       const controller = new AbortController();
       abortControllerRef.current = controller;
 
+      // 8 second timeout
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+      }, 8000);
+
       setIsGeocoding(true);
       setGeoError(null);
 
@@ -132,22 +139,28 @@ export default function LocationPickerModal({
           }
         );
 
+        clearTimeout(timeoutId);
+
         if (!response.ok) {
-          throw new Error('Nominatim request failed');
+          throw new Error(`Nominatim HTTP ${response.status}`);
         }
 
         const data = await response.json();
         if (data && data.display_name) {
-          // Format a clean, human-readable address
           const formatted = data.display_name;
           setAddress(formatted);
         } else {
+          console.warn('[Nominatim] Empty reverse geocode result for coordinates:', { lat, lng });
           setGeoError(currentT.fallbackGeoError);
         }
       } catch (err) {
-        if (err.name !== 'AbortError') {
-          setGeoError(currentT.fallbackGeoError);
+        clearTimeout(timeoutId);
+        if (err.name === 'AbortError') {
+          console.warn('[Nominatim] Reverse geocode request timed out for coordinates:', { lat, lng });
+        } else {
+          console.error('[Nominatim] Reverse geocode error:', err);
         }
+        setGeoError(currentT.fallbackGeoError);
       } finally {
         setIsGeocoding(false);
       }
@@ -155,7 +168,7 @@ export default function LocationPickerModal({
     [lang, currentT.fallbackGeoError]
   );
 
-  // Initialize Leaflet Map
+  // Initialize and manage Leaflet Map
   useEffect(() => {
     if (!isOpen || !mapContainerRef.current) return;
 
@@ -183,33 +196,64 @@ export default function LocationPickerModal({
         icon: createPinIcon(),
       }).addTo(map);
 
-      // Marker drag handler
+      // Marker dragend handler — directly read marker coordinates
       marker.on('dragend', (e) => {
-        const position = e.target.getLatLng();
-        setCoords({ lat: position.lat, lng: position.lng });
-        reverseGeocode(position.lat, position.lng);
+        const markerPos = e.target.getLatLng();
+        const nextLat = markerPos.lat;
+        const nextLng = markerPos.lng;
+        setCoords({ lat: nextLat, lng: nextLng });
+        reverseGeocode(nextLat, nextLng);
       });
 
-      // Map click handler
+      // Map click handler — accurately move marker & coordinate state
       map.on('click', (e) => {
-        const { lat, lng } = e.latlng;
-        marker.setLatLng([lat, lng]);
-        setCoords({ lat, lng });
-        reverseGeocode(lat, lng);
+        const clickLat = e.latlng.lat;
+        const clickLng = e.latlng.lng;
+        marker.setLatLng([clickLat, clickLng]);
+        setCoords({ lat: clickLat, lng: clickLng });
+        reverseGeocode(clickLat, clickLng);
       });
 
       mapInstanceRef.current = map;
       markerInstanceRef.current = marker;
 
+      // Invalidate size immediately and after modal animation completes
+      const timer1 = setTimeout(() => {
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.invalidateSize();
+        }
+      }, 100);
+
+      const timer2 = setTimeout(() => {
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.invalidateSize();
+          mapInstanceRef.current.setView(initialCenter, 15);
+        }
+      }, 300);
+
       // Initial reverse geocode if no address provided
-      if (!address) {
+      if (!initialAddress) {
         reverseGeocode(initialCenter[0], initialCenter[1]);
       }
+
+      return () => {
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+      };
     } else {
       mapInstanceRef.current.invalidateSize();
     }
 
+    // Window resize handler to maintain proper projection
+    const handleResize = () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    };
+    window.addEventListener('resize', handleResize);
+
     return () => {
+      window.removeEventListener('resize', handleResize);
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
@@ -236,6 +280,7 @@ export default function LocationPickerModal({
         setCoords({ lat, lng });
 
         if (mapInstanceRef.current && markerInstanceRef.current) {
+          mapInstanceRef.current.invalidateSize();
           mapInstanceRef.current.flyTo([lat, lng], 17, { duration: 1.2 });
           markerInstanceRef.current.setLatLng([lat, lng]);
         }
@@ -281,9 +326,9 @@ export default function LocationPickerModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-navy-950/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-      <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl overflow-hidden border border-gray-200 animate-scale-in my-auto flex flex-col max-h-[90vh]">
+      <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl overflow-hidden border border-gray-200 animate-scale-in my-auto flex flex-col max-h-[92vh]">
         {/* Header */}
-        <div className="p-4 sm:p-6 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white">
+        <div className="p-4 sm:p-5 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-teal-50 border border-teal-100 text-teal-600 flex items-center justify-center shrink-0">
               <MapPin className="w-5 h-5" />
@@ -301,22 +346,22 @@ export default function LocationPickerModal({
           <button
             onClick={onClose}
             type="button"
-            className="p-2 rounded-xl text-gray-400 hover:text-navy-900 hover:bg-gray-100 transition-colors"
+            className="p-2 rounded-xl text-gray-400 hover:text-navy-900 hover:bg-gray-100 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Map View */}
-        <div className="relative w-full h-72 sm:h-96 bg-gray-100">
-          <div ref={mapContainerRef} className="w-full h-full z-0" />
+        {/* Map View with fixed explicit CSS height */}
+        <div className="relative w-full h-[320px] sm:h-[380px] bg-gray-100" style={{ minHeight: '320px' }}>
+          <div ref={mapContainerRef} className="w-full h-full z-0" style={{ height: '100%', width: '100%' }} />
 
           {/* Current GPS location trigger button */}
           <button
             type="button"
             onClick={handleGetCurrentLocation}
             disabled={isLocating}
-            className="absolute top-3 right-3 z-10 bg-white/95 backdrop-blur-xs hover:bg-white text-navy-900 hover:text-teal-700 font-semibold text-xs px-3 py-2 rounded-xl shadow-md border border-gray-200/80 flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50"
+            className="absolute top-3 right-3 z-10 bg-white/95 backdrop-blur-xs hover:bg-white text-navy-900 hover:text-teal-700 font-semibold text-xs px-3 py-2 rounded-xl shadow-md border border-gray-200/80 flex items-center gap-2 transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
           >
             {isLocating ? (
               <Loader2 className="w-4 h-4 animate-spin text-teal-600" />
@@ -329,13 +374,14 @@ export default function LocationPickerModal({
           </button>
 
           {/* Coordinate indicator pill */}
-          <div className="absolute bottom-3 left-3 z-10 bg-navy-900/80 backdrop-blur-xs text-white text-[10px] font-mono px-2.5 py-1 rounded-lg pointer-events-none">
-            {coords.lat.toFixed(6)}, {coords.lng.toFixed(6)}
+          <div className="absolute bottom-3 left-3 z-10 bg-navy-900/85 backdrop-blur-xs text-white text-[11px] font-mono px-3 py-1.5 rounded-xl shadow-md pointer-events-none flex items-center gap-1.5 border border-white/10">
+            <span className="text-teal-400 font-bold">📍</span>
+            <span>{coords.lat.toFixed(6)}, {coords.lng.toFixed(6)}</span>
           </div>
         </div>
 
         {/* Address Input & Actions */}
-        <div className="p-4 sm:p-6 bg-gray-50/80 border-t border-gray-100 space-y-4 shrink-0">
+        <div className="p-4 sm:p-5 bg-gray-50/80 border-t border-gray-100 space-y-3.5 shrink-0">
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-xs font-semibold text-navy-900 flex items-center gap-1.5">
@@ -358,19 +404,30 @@ export default function LocationPickerModal({
             </div>
 
             {geoError && (
-              <div className="mt-2 text-[11px] text-amber-700 flex items-center gap-1.5">
-                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                <span>{geoError}</span>
+              <div className="mt-2 text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-2.5 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0 text-amber-600" />
+                  <span>{geoError}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => reverseGeocode(coords.lat, coords.lng)}
+                  disabled={isGeocoding}
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-teal-700 hover:text-teal-800 underline shrink-0 cursor-pointer"
+                >
+                  <RotateCw className={`w-3 h-3 ${isGeocoding ? 'animate-spin' : ''}`} />
+                  <span>{currentT.retry}</span>
+                </button>
               </div>
             )}
           </div>
 
           {/* Action buttons */}
-          <div className="flex items-center justify-end gap-2.5 pt-1">
+          <div className="flex items-center justify-end gap-2.5 pt-0.5">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-100 text-gray-700 text-xs font-semibold transition-colors"
+              className="px-4 py-2.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-100 text-gray-700 text-xs font-semibold transition-colors cursor-pointer"
             >
               {currentT.cancel}
             </button>
@@ -378,7 +435,7 @@ export default function LocationPickerModal({
             <button
               type="button"
               onClick={handleConfirm}
-              className="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 active:bg-teal-800 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-2"
+              className="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 active:bg-teal-800 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-2 cursor-pointer"
             >
               <Check className="w-4 h-4" />
               <span>{currentT.confirmLocation}</span>
